@@ -11,7 +11,6 @@ const requiredFiles = [
   "styles/site.css",
   "scripts/site.js",
   "public/_headers",
-  "public/_redirects",
   "README.md",
   "package.json",
 ];

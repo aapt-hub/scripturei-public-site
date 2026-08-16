@@ -13,7 +13,6 @@ for (const entry of ["index.html", "assets", "styles", "scripts/site.js"]) {
 }
 
 await cp(resolve(projectRoot, "public", "_headers"), resolve(dist, "_headers"));
-await cp(resolve(projectRoot, "public", "_redirects"), resolve(dist, "_redirects"));
 
 const [html, css, js, background] = await Promise.all([
   readFile(resolve(projectRoot, "index.html"), "utf8"),
