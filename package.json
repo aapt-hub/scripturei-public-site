@@ -1,0 +1,11 @@
+{
+  "name": "scripturei-public-site",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "materialize:background": "node scripts/materialize-background.mjs",
+    "build": "node scripts/build.mjs",
+    "validate": "node scripts/validate-site.mjs"
+  }
+}
