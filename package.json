@@ -6,7 +6,9 @@
   "scripts": {
     "materialize:background": "node scripts/materialize-background.mjs",
     "build": "node scripts/build.mjs",
-    "validate": "node scripts/validate-site.mjs"
+    "validate": "node scripts/validate-site.mjs",
+    "check": "npm run validate && npm run build",
+    "deploy": "wrangler deploy"
   },
   "devDependencies": {
     "wrangler": "4.123.0"
