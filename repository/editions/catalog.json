@@ -1,0 +1,34 @@
+{
+  "schema": "scripturei-bible-repository-catalog/v1",
+  "description": "Validated Bible edition catalog consumed by governed Scripture services.",
+  "generatedAtUtc": null,
+  "editions": [
+    {
+      "editionId": "kjv-1769",
+      "languageCode": "eng",
+      "name": "King James Version 1769",
+      "validationStatus": "APPROVED",
+      "rightsStatus": "APPROVED",
+      "readerAvailable": true,
+      "sha256": null
+    },
+    {
+      "editionId": "hatbsa",
+      "languageCode": "hat",
+      "name": "Haitian Creole Bible",
+      "validationStatus": "APPROVED",
+      "rightsStatus": "APPROVED",
+      "readerAvailable": true,
+      "sha256": null
+    },
+    {
+      "editionId": "french-lsg-1910",
+      "languageCode": "fra",
+      "name": "Louis Segond 1910",
+      "validationStatus": "APPROVED",
+      "rightsStatus": "APPROVED",
+      "readerAvailable": true,
+      "sha256": null
+    }
+  ]
+}
