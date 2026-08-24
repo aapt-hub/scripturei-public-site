@@ -1,0 +1,32 @@
+{
+  "schema": "scripturei-bible-repository-provider-interface/v1",
+  "description": "Defines the provider operations required by Base66 Edge to serve validated Scripture content to the Reader.",
+  "operations": {
+    "getEditions": {
+      "description": "Return editions available for Reader selection.",
+      "input": {},
+      "output": "EditionCatalog"
+    },
+    "getBooks": {
+      "description": "Return books available for a validated Bible edition.",
+      "input": {
+        "editionId": "string"
+      },
+      "output": "BookList"
+    },
+    "getPassage": {
+      "description": "Return a validated Scripture passage.",
+      "input": {
+        "editionId": "string",
+        "bookCode": "string",
+        "chapter": "integer"
+      },
+      "output": "ScripturePassage"
+    }
+  },
+  "authorityBoundary": {
+    "scriptureAuthority": "Bible",
+    "technologyRole": "service_only",
+    "interpretationAuthority": "none"
+  }
+}
