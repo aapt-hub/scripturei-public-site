@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "scripturei-bible-repository-connector/v1",
+  "title": "SCRIPTUREi Bible Repository Connector Contract",
+  "type": "object",
+  "description": "Defines the governed request boundary between the Scripture Reader and validated Bible repository services.",
+  "required": [
+    "editionId",
+    "languageCode",
+    "bookCode",
+    "chapter",
+    "validationStatus"
+  ],
+  "properties": {
+    "editionId": {
+      "type": "string"
+    },
+    "languageCode": {
+      "type": "string"
+    },
+    "bookCode": {
+      "type": "string"
+    },
+    "chapter": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "verseStart": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "verseEnd": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "editionSha256": {
+      "type": "string",
+      "pattern": "^[A-Fa-f0-9]{64}$"
+    },
+    "validationStatus": {
+      "type": "string",
+      "enum": [
+        "APPROVED",
+        "HOLD",
+        "REVIEW_REQUIRED",
+        "NOT_PROMOTED"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
