@@ -54,11 +54,46 @@
 
         <div class="bible-grid">
           <article class="reader-card" aria-labelledby="reader-title">
-            <span class="status"><span class="status-dot" aria-hidden="true"></span>Bible reader in preparation</span>
+            <span class="status">
+              <span class="status-dot" aria-hidden="true"></span>
+              Scripture reader available
+            </span>
+
             <h3 id="reader-title">Read Scripture</h3>
-            <p>This space is reserved for direct Bible reading and translation selection. The reader remains inactive until Bible sources, publication rights, provenance, privacy, and security controls are validated.</p>
-            <p>No unnecessary account. No advertising. No behavioral profiling.</p>
-            <button class="reader-button" type="button" disabled>Reader coming soon</button>
+
+            <p>
+              Read governed original-language Scripture sources directly.
+              Select an edition, book, and chapter.
+            </p>
+
+            <div class="reader-controls">
+              <label>
+                Edition
+                <select id="reader-edition">
+                  <option value="">Loading editions…</option>
+                </select>
+              </label>
+
+              <label>
+                Book
+                <select id="reader-book" disabled>
+                  <option value="">Select edition first</option>
+                </select>
+              </label>
+
+              <label>
+                Chapter
+                <select id="reader-chapter" disabled>
+                  <option value="">Select book first</option>
+                </select>
+              </label>
+            </div>
+
+            <div id="reader-message" class="reader-message" role="status">
+              Select an edition to begin.
+            </div>
+
+            <div id="reader-passage" class="reader-passage" aria-live="polite"></div>
           </article>
 
           <figure class="scripture-card">

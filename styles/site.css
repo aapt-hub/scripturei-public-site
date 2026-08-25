@@ -506,3 +506,77 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
+
+.reader-controls {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .8rem;
+  margin: 1.3rem 0;
+}
+
+.reader-controls label {
+  display: grid;
+  gap: .4rem;
+  color: var(--mist);
+  font-size: .85rem;
+}
+
+.reader-controls select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: .65rem;
+  background: rgba(5, 19, 35, .9);
+  color: #fff;
+  padding: .75rem .85rem;
+  font: inherit;
+}
+
+.reader-controls select:disabled {
+  opacity: .55;
+}
+
+.reader-message {
+  color: var(--muted);
+  min-height: 1.5rem;
+  margin-top: .25rem;
+}
+
+.reader-passage {
+  width: 100%;
+  margin-top: 1rem;
+  max-height: 32rem;
+  overflow-y: auto;
+  padding-right: .5rem;
+}
+
+.reader-passage h4 {
+  margin: 0 0 1rem;
+  color: var(--gold-300);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.4rem;
+}
+
+.reader-verses p {
+  margin: 0 0 .85rem;
+  color: #f4f1e8;
+  line-height: 1.75;
+  font-size: 1.05rem;
+}
+
+.reader-verses sup {
+  color: var(--gold-300);
+  font-size: .7em;
+  margin-right: .2rem;
+}
+
+.reader-passage[dir="rtl"] {
+  text-align: right;
+  font-size: 1.12rem;
+}
+
+@media (max-width: 720px) {
+  .reader-controls {
+    grid-template-columns: 1fr;
+  }
+}
