@@ -21,9 +21,6 @@ if (toggle && links) {
   });
 }
 
-const reader = document.querySelector("[data-reader]");
-const readerOpenButtons = document.querySelectorAll("[data-reader-open]");
-const readerCloseButton = document.querySelector("[data-reader-close]");
 const editionSelect = document.querySelector("[data-reader-edition]");
 const editionName = document.querySelector("[data-reader-edition-name]");
 
@@ -32,37 +29,6 @@ const editionNames = {
   hatbsa: "Haitian Creole Bible",
   "french-lsg-1910": "Louis Segond 1910",
 };
-
-let readerTrigger = null;
-
-const openReader = (trigger) => {
-  if (!reader) return;
-  readerTrigger = trigger instanceof HTMLElement ? trigger : null;
-  reader.hidden = false;
-  document.body.classList.add("reader-open");
-  readerCloseButton?.focus();
-};
-
-const closeReader = () => {
-  if (!reader) return;
-  reader.hidden = true;
-  document.body.classList.remove("reader-open");
-  readerTrigger?.focus();
-};
-
-readerOpenButtons.forEach((button) => {
-  button.addEventListener("click", () => openReader(button));
-});
-
-readerCloseButton?.addEventListener("click", closeReader);
-
-reader?.addEventListener("click", (event) => {
-  if (event.target === reader) closeReader();
-});
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && reader && !reader.hidden) closeReader();
-});
 
 editionSelect?.addEventListener("change", () => {
   if (editionName) editionName.textContent = editionNames[editionSelect.value] ?? "Approved Bible edition";
