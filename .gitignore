@@ -3,3 +3,7 @@ scripts/xray-dev.js
 styles/xray-dev.css
 dev.html
 node_modules/
+
+# Generated local build/review output
+dist/
+SCRIPTUREi-public-site-local-review-R2.html
