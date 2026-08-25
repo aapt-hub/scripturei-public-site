@@ -41,59 +41,27 @@
           <p class="hero-kicker">Read the Bible first</p>
           <h1 id="hero-title">Bibles for the world.</h1>
           <p class="hero-lead">SCRIPTUREi begins with Scripture. Everything else supports a peaceful, trustworthy, and private Bible reading experience for every nation, tribe, people, and language.</p>
-          <button class="hero-action" type="button" data-reader-open>Open Bible</button>
+
+          <aside class="hero-mission" aria-label="Great Commission goal">
+            <blockquote>“And this Gospel of the Kingdom shall be preached in all the world…”</blockquote>
+            <p class="reader-mission-reference">Matthew 24:14</p>
+            <p class="reader-goal"><strong>3.8 Billion</strong><span>Still to Reach</span></p>
+          </aside>
         </div>
         <p class="hero-promise">Read freely. <span>Leave privately.</span></p>
       </section>
 
       <section class="section bible-section" id="bible" aria-labelledby="bible-title">
-        <div class="section-heading">
-          <p class="eyebrow">The Word of God</p>
-          <h2 id="bible-title">Bible reading comes first.</h2>
-          <p class="lead">The reading experience is the center of SCRIPTUREi. Vision, mission, stewardship, privacy, provenance, and technology exist to support trustworthy access to Scripture—not to compete with it.</p>
+        <div class="section-heading reader-heading">
+          <p class="eyebrow">Reader V1 Limited</p>
+          <h2 id="bible-title">Open the Bible</h2>
+          <p class="lead">Choose an approved Bible edition below. The Reader remains directly on this page so Scripture is the primary experience—not another layer.</p>
         </div>
 
-        <div class="bible-grid">
-          <article class="reader-card reader-card-active" aria-labelledby="reader-title">
-            <span class="status"><span class="status-dot" aria-hidden="true"></span>Reader V1 Limited</span>
-            <h3 id="reader-title">Read Scripture</h3>
-            <p>Open the limited SCRIPTUREi Reader and select from the Bible editions already approved for Reader availability.</p>
-            <p>English KJV 1769 · Haitian Creole · French Louis Segond 1910</p>
-            <p>No unnecessary account. No advertising. No behavioral profiling.</p>
-            <button class="reader-button" type="button" data-reader-open>Open Bible</button>
-          </article>
-
-          <figure class="scripture-card">
-            <blockquote>“Thy word is a lamp unto my feet, and a light unto my path.”</blockquote>
-            <figcaption>Psalm 119:105</figcaption>
-          </figure>
-        </div>
-
-        <aside class="reader-mission" aria-label="Great Commission goal">
-          <blockquote>“And this Gospel of the Kingdom shall be preached in all the world…”</blockquote>
-          <p class="reader-mission-reference">Matthew 24:14</p>
-          <p class="reader-goal"><strong>3.8 Billion</strong><span>Still to Reach</span></p>
-        </aside>
-      </section>
-
-      <section class="scripture-reader" data-reader hidden aria-label="Bible Reader">
-        <div class="reader-panel" role="dialog" aria-modal="true" aria-labelledby="reader-panel-title">
-          <button class="reader-close" type="button" data-reader-close aria-label="Close Bible Reader">Close</button>
-          <header class="reader-header">
-            <p class="eyebrow">Reader V1 Limited</p>
-            <h2 id="reader-panel-title">Open Bible</h2>
-            <p>Read the Word of God peacefully.</p>
-          </header>
-
-          <div class="reader-mission reader-mission-panel">
-            <blockquote>“And this Gospel of the Kingdom shall be preached in all the world…”</blockquote>
-            <p class="reader-mission-reference">Matthew 24:14</p>
-            <p class="reader-goal"><strong>3.8 Billion</strong><span>Still to Reach</span></p>
-          </div>
-
+        <section class="inline-reader" aria-label="Bible Reader">
           <nav class="reader-navigation" aria-label="Bible navigation">
             <label>
-              Edition
+              Bible Edition
               <select data-reader-edition>
                 <option value="kjv-1769">English — King James Version 1769</option>
                 <option value="hatbsa">Haitian Creole — Haitian Creole Bible</option>
@@ -117,7 +85,7 @@
             <button type="button" disabled>Download</button>
             <button type="button" disabled>Share</button>
           </footer>
-        </div>
+        </section>
       </section>
 
       <section class="purpose-wrap" id="purpose" aria-labelledby="purpose-title">
