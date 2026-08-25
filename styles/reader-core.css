@@ -1,0 +1,228 @@
+.hero-shade {
+  background:
+    radial-gradient(circle at 24% 42%, rgba(2, 11, 22, .42), transparent 36rem),
+    linear-gradient(90deg, rgba(2, 11, 22, .48) 0%, rgba(2, 11, 22, .16) 44%, rgba(2, 11, 22, .02) 72%),
+    linear-gradient(0deg, rgba(2, 11, 22, .28) 0%, transparent 32%);
+}
+
+.hero-copy {
+  max-width: 72rem;
+}
+
+.hero-action,
+.reader-button {
+  cursor: pointer;
+}
+
+.hero-action {
+  appearance: none;
+}
+
+.reader-card-active {
+  border-color: rgba(255, 215, 132, .42);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, .28);
+}
+
+.reader-card-active .reader-button {
+  border-color: rgba(255, 215, 132, .62);
+  background: var(--gold-300);
+  color: var(--night-950);
+  padding: .76rem 1.05rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.reader-card-active .reader-button:hover,
+.reader-card-active .reader-button:focus-visible {
+  background: var(--gold-200);
+}
+
+.reader-mission {
+  margin-top: 2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(4, 18, 37, .68);
+  padding: clamp(1.4rem, 3vw, 2rem);
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.reader-mission blockquote {
+  max-width: 42rem;
+  margin: 0 auto;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+  line-height: 1.35;
+}
+
+.reader-mission-reference {
+  margin: .55rem 0 0;
+  color: var(--gold-300);
+  font-weight: 800;
+}
+
+.reader-goal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 1.2rem 0 0;
+}
+
+.reader-goal strong {
+  color: var(--gold-300);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.3rem, 6vw, 4.5rem);
+  line-height: 1;
+}
+
+.reader-goal span {
+  margin-top: .4rem;
+  color: var(--mist);
+  font-size: .82rem;
+  font-weight: 900;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.scripture-reader[hidden] {
+  display: none;
+}
+
+.scripture-reader {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  background: rgba(2, 11, 22, .86);
+  padding: clamp(1rem, 4vw, 2.5rem);
+  backdrop-filter: blur(14px);
+}
+
+.reader-open {
+  overflow: hidden;
+}
+
+.reader-panel {
+  position: relative;
+  width: min(860px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  border: 1px solid rgba(255, 215, 132, .35);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(150deg, rgba(11, 43, 80, .98), rgba(4, 18, 37, .99));
+  padding: clamp(1.4rem, 4vw, 2.6rem);
+  box-shadow: 0 32px 100px rgba(0, 0, 0, .55);
+}
+
+.reader-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .06);
+  color: var(--mist);
+  padding: .45rem .8rem;
+  cursor: pointer;
+}
+
+.reader-header h2 {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.2rem, 6vw, 4.5rem);
+  line-height: 1;
+}
+
+.reader-header p:last-child {
+  color: var(--mist);
+}
+
+.reader-mission-panel {
+  margin-top: 1.5rem;
+}
+
+.reader-navigation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: .75rem;
+  align-items: end;
+  margin-top: 1.5rem;
+}
+
+.reader-navigation label {
+  display: grid;
+  gap: .4rem;
+  color: var(--gold-200);
+  font-size: .78rem;
+  font-weight: 850;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.reader-navigation select,
+.reader-navigation button,
+.reader-tools button {
+  min-height: 2.7rem;
+  border: 1px solid var(--line-soft);
+  border-radius: .7rem;
+  background: rgba(255, 255, 255, .06);
+  color: var(--white);
+  padding: .55rem .75rem;
+}
+
+.reader-navigation select {
+  width: 100%;
+}
+
+.reader-navigation option {
+  color: #07182d;
+}
+
+.reader-navigation button:disabled,
+.reader-tools button:disabled {
+  color: var(--muted);
+  opacity: .58;
+}
+
+.reader-text {
+  margin-top: 1.25rem;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: rgba(2, 11, 22, .38);
+  padding: 1.25rem;
+}
+
+.reader-text h3 {
+  margin: 0 0 .6rem;
+  color: var(--gold-300);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.55rem;
+}
+
+.reader-text p {
+  margin: .5rem 0 0;
+  color: var(--mist);
+}
+
+.reader-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 700px) {
+  .reader-navigation {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reader-navigation label {
+    grid-column: 1 / -1;
+  }
+
+  .reader-panel {
+    max-height: none;
+  }
+}
