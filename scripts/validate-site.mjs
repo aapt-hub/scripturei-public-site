@@ -54,16 +54,34 @@ for (const forbidden of [
 
 for (const required of [
   "Bibles for the world.",
-  "Bible reader in preparation",
+  "Scripture reader available",
+  "Read Scripture",
+  'id="reader-edition"',
+  'id="reader-book"',
+  'id="reader-chapter"',
+  'id="reader-passage"',
   "Vision",
   "Mission",
-  "No unnecessary account",
   "apauneto@gmail.com",
   "PROMiXi LLC",
 ]) assert.ok(html.includes(required), `Required content missing: ${required}`);
 
 assert.ok(html.includes('href="mailto:apauneto@gmail.com"'), "Contact must use the approved mailto link");
-assert.ok(html.includes('button class="reader-button" type="button" disabled'), "Bible reader control must remain disabled");
+
+for (const endpoint of [
+  "/v1/reader/editions",
+  "/v1/reader/books",
+  "/v1/reader/chapters",
+  "/v1/reader/passage",
+]) {
+  assert.ok(js.includes(endpoint), `Reader endpoint missing: ${endpoint}`);
+}
+
+assert.ok(
+  js.includes('window.location.hostname === "127.0.0.1"') &&
+  js.includes('window.location.hostname === "localhost"'),
+  "Local Reader development binding is missing"
+);
 assert.ok(html.includes('class="page-background" aria-hidden="true"'), "Fixed background layer is missing");
 assert.ok(css.includes(".page-background"), "Fixed background CSS is missing");
 assert.ok(css.includes("position: fixed"), "Background must be fixed to the viewport");
@@ -71,10 +89,17 @@ assert.ok(css.includes('background-image: url("../assets/background.webp")'), "A
 assert.ok(backgroundStats.size > 100_000, "Background image is unexpectedly small");
 assert.ok(headers.includes("Content-Security-Policy"), "Security headers are missing CSP");
 assert.ok(headers.includes("Referrer-Policy: no-referrer"), "Security headers are missing Referrer-Policy");
-assert.equal(/https?:\/\//i.test(html + css + js), false, "External network reference detected");
+const absoluteUrls = (html + css + js).match(/https?:\/\/[^\s"'`<>]+/gi) ?? [];
+
+for (const url of absoluteUrls) {
+  assert.ok(
+    url.startsWith("http://127.0.0.1:8777"),
+    `Unapproved external network reference detected: ${url}`
+  );
+}
 
 console.log("STRUCTURAL_MATERIALIZATION_CHECK=PASS");
 console.log(`BACKGROUND_BYTES=${backgroundStats.size}`);
 console.log("BACKGROUND_BEHAVIOR=FIXED_VIEWPORT");
 console.log("FOREGROUND_BEHAVIOR=DOCUMENT_SCROLL");
-console.log("REMOTE_CONNECTIONS=NONE");
+console.log("READER_NETWORK_POLICY=SAME_ORIGIN_PRODUCTION_LOCALHOST_DEV_ONLY");

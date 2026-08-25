@@ -2,3 +2,4 @@
 scripts/xray-dev.js
 styles/xray-dev.css
 dev.html
+node_modules/

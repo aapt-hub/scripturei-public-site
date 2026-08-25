@@ -30,7 +30,7 @@ const readerPassage = document.querySelector("#reader-passage");
 const readerApiBase =
   window.location.hostname === "127.0.0.1" ||
   window.location.hostname === "localhost"
-    ? "http://127.0.0.1:8666"
+    ? "http://127.0.0.1:8777"
     : "";
 
 const setReaderMessage = (message) => {
