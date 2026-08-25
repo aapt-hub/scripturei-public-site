@@ -9,6 +9,7 @@ const requiredFiles = [
   "index.html",
   "assets/background.webp",
   "styles/site.css",
+  "styles/reader-core.css",
   "scripts/site.js",
   "public/_headers",
   "README.md",
@@ -17,13 +18,16 @@ const requiredFiles = [
 
 for (const path of requiredFiles) await access(resolve(projectRoot, path), constants.R_OK);
 
-const [html, css, js, headers, backgroundStats] = await Promise.all([
+const [html, css, readerCss, js, headers, backgroundStats] = await Promise.all([
   readFile(resolve(projectRoot, "index.html"), "utf8"),
   readFile(resolve(projectRoot, "styles/site.css"), "utf8"),
+  readFile(resolve(projectRoot, "styles/reader-core.css"), "utf8"),
   readFile(resolve(projectRoot, "scripts/site.js"), "utf8"),
   readFile(resolve(projectRoot, "public", "_headers"), "utf8"),
   stat(resolve(projectRoot, "assets", "background.webp")),
 ]);
+
+const allClientText = html + css + readerCss + js;
 
 const exactAuthority = [
   "Bible",
@@ -49,12 +53,16 @@ for (const forbidden of [
   "localStorage",
   "sessionStorage",
 ]) {
-  assert.equal((html + css + js).toLowerCase().includes(forbidden.toLowerCase()), false, `Forbidden content: ${forbidden}`);
+  assert.equal(allClientText.toLowerCase().includes(forbidden.toLowerCase()), false, `Forbidden content: ${forbidden}`);
 }
 
 for (const required of [
   "Bibles for the world.",
-  "Bible reader in preparation",
+  "Reader V1 Limited",
+  "Open Bible",
+  "Matthew 24:14",
+  "3.8 Billion",
+  "Still to Reach",
   "Vision",
   "Mission",
   "No unnecessary account",
@@ -63,18 +71,25 @@ for (const required of [
 ]) assert.ok(html.includes(required), `Required content missing: ${required}`);
 
 assert.ok(html.includes('href="mailto:apauneto@gmail.com"'), "Contact must use the approved mailto link");
-assert.ok(html.includes('button class="reader-button" type="button" disabled'), "Bible reader control must remain disabled");
+assert.ok(html.includes('class="reader-button" type="button" data-reader-open'), "Reader launcher must be active");
+assert.ok(html.includes('class="scripture-reader" data-reader hidden'), "Reader overlay must default to hidden");
+assert.ok(html.includes('data-reader-edition'), "Reader edition selector is missing");
+assert.ok(js.includes("data-reader-open"), "Reader launcher behavior is missing");
+assert.ok(js.includes("data-reader-close"), "Reader close behavior is missing");
 assert.ok(html.includes('class="page-background" aria-hidden="true"'), "Fixed background layer is missing");
 assert.ok(css.includes(".page-background"), "Fixed background CSS is missing");
 assert.ok(css.includes("position: fixed"), "Background must be fixed to the viewport");
 assert.ok(css.includes('background-image: url("../assets/background.webp")'), "Approved background asset is not bound to the fixed layer");
+assert.ok(readerCss.includes(".scripture-reader"), "Reader presentation styles are missing");
 assert.ok(backgroundStats.size > 100_000, "Background image is unexpectedly small");
 assert.ok(headers.includes("Content-Security-Policy"), "Security headers are missing CSP");
 assert.ok(headers.includes("Referrer-Policy: no-referrer"), "Security headers are missing Referrer-Policy");
-assert.equal(/https?:\/\//i.test(html + css + js), false, "External network reference detected");
+assert.equal(/https?:\/\//i.test(allClientText), false, "External network reference detected");
 
 console.log("STRUCTURAL_MATERIALIZATION_CHECK=PASS");
 console.log(`BACKGROUND_BYTES=${backgroundStats.size}`);
 console.log("BACKGROUND_BEHAVIOR=FIXED_VIEWPORT");
 console.log("FOREGROUND_BEHAVIOR=DOCUMENT_SCROLL");
+console.log("READER_STATE=V1_LIMITED_ACTIVE_LAUNCHER");
+console.log("SCRIPTURE_TEXT_PAYLOAD=FAIL_CLOSED");
 console.log("REMOTE_CONNECTIONS=NONE");
