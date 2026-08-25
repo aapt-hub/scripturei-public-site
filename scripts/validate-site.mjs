@@ -52,6 +52,9 @@ for (const forbidden of [
   "<form",
   "localStorage",
   "sessionStorage",
+  "data-reader-open",
+  "data-reader-close",
+  "aria-modal=\"true\"",
 ]) {
   assert.equal(allClientText.toLowerCase().includes(forbidden.toLowerCase()), false, `Forbidden content: ${forbidden}`);
 }
@@ -59,10 +62,11 @@ for (const forbidden of [
 for (const required of [
   "Bibles for the world.",
   "Reader V1 Limited",
-  "Open Bible",
+  "Open the Bible",
   "Matthew 24:14",
   "3.8 Billion",
   "Still to Reach",
+  "Bible Edition",
   "Vision",
   "Mission",
   "No unnecessary account",
@@ -71,16 +75,17 @@ for (const required of [
 ]) assert.ok(html.includes(required), `Required content missing: ${required}`);
 
 assert.ok(html.includes('href="mailto:apauneto@gmail.com"'), "Contact must use the approved mailto link");
-assert.ok(html.includes('class="reader-button" type="button" data-reader-open'), "Reader launcher must be active");
-assert.ok(html.includes('class="scripture-reader" data-reader hidden'), "Reader overlay must default to hidden");
+assert.ok(html.includes('class="inline-reader"'), "Inline Reader must be present");
 assert.ok(html.includes('data-reader-edition'), "Reader edition selector is missing");
-assert.ok(js.includes("data-reader-open"), "Reader launcher behavior is missing");
-assert.ok(js.includes("data-reader-close"), "Reader close behavior is missing");
+assert.ok(html.includes('data-reader-edition-name'), "Reader edition display binding is missing");
+assert.ok(js.includes("data-reader-edition"), "Reader edition behavior is missing");
+assert.ok(js.includes("editionNames"), "Reader edition name mapping is missing");
 assert.ok(html.includes('class="page-background" aria-hidden="true"'), "Fixed background layer is missing");
 assert.ok(css.includes(".page-background"), "Fixed background CSS is missing");
 assert.ok(css.includes("position: fixed"), "Background must be fixed to the viewport");
 assert.ok(css.includes('background-image: url("../assets/background.webp")'), "Approved background asset is not bound to the fixed layer");
-assert.ok(readerCss.includes(".scripture-reader"), "Reader presentation styles are missing");
+assert.ok(readerCss.includes(".inline-reader"), "Inline Reader presentation styles are missing");
+assert.ok(readerCss.includes(".hero-mission"), "Hero mission presentation styles are missing");
 assert.ok(backgroundStats.size > 100_000, "Background image is unexpectedly small");
 assert.ok(headers.includes("Content-Security-Policy"), "Security headers are missing CSP");
 assert.ok(headers.includes("Referrer-Policy: no-referrer"), "Security headers are missing Referrer-Policy");
@@ -90,6 +95,7 @@ console.log("STRUCTURAL_MATERIALIZATION_CHECK=PASS");
 console.log(`BACKGROUND_BYTES=${backgroundStats.size}`);
 console.log("BACKGROUND_BEHAVIOR=FIXED_VIEWPORT");
 console.log("FOREGROUND_BEHAVIOR=DOCUMENT_SCROLL");
-console.log("READER_STATE=V1_LIMITED_ACTIVE_LAUNCHER");
+console.log("READER_STATE=V1_LIMITED_INLINE");
+console.log("READER_NAVIGATION=EDITION_VISIBLE_BOOK_CHAPTER_FAIL_CLOSED");
 console.log("SCRIPTURE_TEXT_PAYLOAD=FAIL_CLOSED");
 console.log("REMOTE_CONNECTIONS=NONE");
