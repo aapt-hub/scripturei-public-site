@@ -34,7 +34,7 @@ body {
   inset: 0;
   z-index: 0;
   background-image: url("../assets/background.webp");
-  background-position: center center;
+  background-position: center 34%;
   background-repeat: no-repeat;
   background-size: cover;
   pointer-events: none;
@@ -167,7 +167,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .hero {
   position: relative;
   width: min(1672px, 100%);
-  min-height: clamp(35rem, 72vw, 58rem);
+  min-height: clamp(27rem, 43vw, 36rem);
   margin: 0 auto;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
@@ -183,9 +183,10 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .hero-copy {
   position: relative;
   z-index: 2;
-  width: min(1180px, calc(100% - 2rem));
+  width: min(1320px, calc(100% - 2rem));
   margin: 0 auto;
-  padding-top: clamp(7rem, 14vw, 13rem);
+  padding-top: clamp(3.8rem, 5vw, 5.2rem);
+  padding-left: clamp(5rem, 15vw, 13rem);
 }
 .hero-kicker,
 .eyebrow {
@@ -207,7 +208,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 }
 .hero h1 {
   max-width: 11ch;
-  font-size: clamp(3.6rem, 9vw, 7.8rem);
+  font-size: clamp(3.2rem, 5.8vw, 5.4rem);
   text-wrap: balance;
   text-shadow: 0 4px 30px rgba(0,0,0,.5);
 }
@@ -252,7 +253,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .section {
   width: min(1120px, calc(100% - 2rem));
   margin: 0 auto;
-  padding: clamp(5rem, 9vw, 8rem) 0;
+  padding: clamp(3.25rem, 6vw, 5rem) 0;
 }
 .section-heading { max-width: 53rem; }
 .compact-heading { margin-bottom: 2.5rem; }
@@ -472,14 +473,14 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
   .nav-links.open { display: flex; }
   .nav-links a { display: block; padding: .8rem; }
   .nav-links a::after { display: none; }
-  .hero { min-height: 43rem; }
+  .hero { min-height: 32rem; }
   .hero-shade {
     background:
       linear-gradient(0deg, rgba(2,11,22,.42) 0%, rgba(2,11,22,.2) 48%, rgba(2,11,22,.03) 100%),
       linear-gradient(90deg, rgba(2,11,22,.38), transparent);
   }
-  .hero-copy { padding-top: 6.5rem; }
-  .hero h1 { font-size: clamp(3.35rem, 17vw, 5.8rem); }
+  .hero-copy { padding-top: 5.25rem; }
+  .hero h1 { font-size: clamp(3.2rem, 5.8vw, 5.4rem); }
   .hero-lead { max-width: 30rem; }
   .hero-promise { left: 1rem; right: auto; bottom: 1rem; }
   .bible-grid,
@@ -491,7 +492,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 
 @media (max-width: 480px) {
   .nav-toggle-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  .page-background { background-position: 58% center; }
+  .page-background { background-position: 58% 36%; }
   .hero-copy { padding-top: 5.5rem; }
   .hero-lead { font-size: 1rem; }
   .hero-action { margin-top: 1.3rem; }
