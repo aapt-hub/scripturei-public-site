@@ -1,10 +1,12 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "scripturei-public-site",
+  "main": "worker.js",
   "compatibility_date": "2026-08-16",
   "workers_dev": true,
   "preview_urls": false,
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS"
   }
 }
