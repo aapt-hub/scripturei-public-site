@@ -8,6 +8,7 @@
     <title>SCRIPTUREi — Bibles for the World</title>
     <link rel="preload" href="assets/background.webp" as="image" type="image/webp">
     <link rel="stylesheet" href="styles/site.css">
+    <link rel="stylesheet" href="styles/reader-core.css">
     <script src="scripts/site.js" defer></script>
   </head>
   <body>
@@ -40,54 +41,49 @@
           <p class="hero-kicker">Read the Bible first</p>
           <h1 id="hero-title">Bibles for the world.</h1>
           <p class="hero-lead">SCRIPTUREi begins with Scripture. Everything else supports a peaceful, trustworthy, and private Bible reading experience for every nation, tribe, people, and language.</p>
-          <a class="hero-action" href="#bible">Read the Bible</a>
+
+          <aside class="hero-mission" aria-label="Great Commission goal">
+            <blockquote>“And this Gospel of the Kingdom shall be preached in all the world…”</blockquote>
+            <p class="reader-mission-reference">Matthew 24:14</p>
+            <p class="reader-goal"><strong>3.8 Billion</strong><span>Still to Reach</span></p>
+          </aside>
         </div>
         <p class="hero-promise">Read freely. <span>Leave privately.</span></p>
       </section>
 
       <section class="section bible-section" id="bible" aria-labelledby="bible-title">
-        <div class="section-heading">
-          <p class="eyebrow">The Word of God</p>
-          <h2 id="bible-title">Bible reading comes first.</h2>
-          <p class="lead">The reading experience is the center of SCRIPTUREi. Vision, mission, stewardship, privacy, provenance, and technology exist to support trustworthy access to Scripture—not to compete with it.</p>
+        <div class="section-heading reader-heading">
+          <p class="eyebrow">Reader V1 Limited</p>
+          <h2 id="bible-title">Open the Bible</h2>
+          <p class="lead">Choose an approved Bible edition below. The Reader remains directly on this page so Scripture is the primary experience—not another layer.</p>
         </div>
 
-        <div class="bible-grid">
-          <article class="reader-card" aria-labelledby="reader-title">
-            <span class="status">
-              <span class="status-dot" aria-hidden="true"></span>
-              Scripture reader available
-            </span>
+                <section class="inline-reader" aria-label="Bible Reader">
+          <nav class="reader-navigation" aria-label="Bible navigation">
+            <label>
+              Bible Edition
+              <select id="reader-edition" data-reader-edition>
+                <option value="">Loading editions…</option>
+              </select>
+            </label>
 
-            <h3 id="reader-title">Read Scripture</h3>
+            <label>
+              Book
+              <select id="reader-book" data-reader-book disabled>
+                <option value="">Select edition first</option>
+              </select>
+            </label>
 
-            <p>
-              Read governed original-language Scripture sources directly.
-              Select an edition, book, and chapter.
-            </p>
+            <label>
+              Chapter
+              <select id="reader-chapter" data-reader-chapter disabled>
+                <option value="">Select book first</option>
+              </select>
+            </label>
+          </nav>
 
-            <div class="reader-controls">
-              <label>
-                Edition
-                <select id="reader-edition">
-                  <option value="">Loading editions…</option>
-                </select>
-              </label>
-
-              <label>
-                Book
-                <select id="reader-book" disabled>
-                  <option value="">Select edition first</option>
-                </select>
-              </label>
-
-              <label>
-                Chapter
-                <select id="reader-chapter" disabled>
-                  <option value="">Select book first</option>
-                </select>
-              </label>
-            </div>
+          <article class="reader-text" aria-live="polite">
+            <h3 data-reader-edition-name>Read Scripture</h3>
 
             <div id="reader-message" class="reader-message" role="status">
               Select an edition to begin.
@@ -96,11 +92,14 @@
             <div id="reader-passage" class="reader-passage" aria-live="polite"></div>
           </article>
 
-          <figure class="scripture-card">
-            <blockquote>“Thy word is a lamp unto my feet, and a light unto my path.”</blockquote>
-            <figcaption>Psalm 119:105</figcaption>
-          </figure>
-        </div>
+          <footer class="reader-tools">
+            <button type="button" disabled>A−</button>
+            <button type="button" disabled>A+</button>
+            <button type="button" disabled>Print</button>
+            <button type="button" disabled>Download</button>
+            <button type="button" disabled>Share</button>
+          </footer>
+        </section>
       </section>
 
       <section class="purpose-wrap" id="purpose" aria-labelledby="purpose-title">

@@ -1,0 +1,198 @@
+.page-background {
+  background-position: 68% center;
+}
+
+.hero-shade {
+  background:
+    radial-gradient(circle at 28% 42%, rgba(2, 11, 22, .36), transparent 34rem),
+    linear-gradient(90deg, rgba(2, 11, 22, .42) 0%, rgba(2, 11, 22, .12) 44%, rgba(2, 11, 22, .02) 72%),
+    linear-gradient(0deg, rgba(2, 11, 22, .24) 0%, transparent 32%);
+}
+
+.hero-copy {
+  max-width: 72rem;
+}
+
+.hero-mission {
+  width: min(31rem, 100%);
+  margin-top: 1.6rem;
+  border: 1px solid rgba(255, 215, 132, .34);
+  border-radius: 1rem;
+  background: rgba(4, 18, 37, .68);
+  padding: 1rem 1.15rem;
+  text-align: left;
+  backdrop-filter: blur(10px);
+}
+
+.hero-mission blockquote {
+  margin: 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(.95rem, 1.4vw, 1.15rem);
+  line-height: 1.35;
+}
+
+.reader-mission-reference {
+  margin: .35rem 0 0;
+  color: var(--gold-300);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.reader-goal {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: .65rem;
+  margin: .55rem 0 0;
+}
+
+.reader-goal strong {
+  color: var(--gold-300);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  line-height: 1;
+}
+
+.reader-goal span {
+  color: var(--mist);
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.reader-heading {
+  max-width: 60rem;
+}
+
+.reader-heading h2 {
+  font-size: clamp(2.5rem, 5vw, 3.4rem);
+}
+
+.inline-reader {
+  margin-top: 2rem;
+  border: 1px solid rgba(255, 215, 132, .34);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(150deg, rgba(11, 43, 80, .9), rgba(4, 18, 37, .94));
+  padding: clamp(1.4rem, 4vw, 2.6rem);
+  box-shadow: 0 24px 72px rgba(0, 0, 0, .3);
+  backdrop-filter: blur(10px);
+}
+
+.reader-navigation {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .9rem;
+  align-items: stretch;
+}
+
+.reader-navigation label {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: .65rem;
+  color: var(--gold-200);
+  font-size: .9rem;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.reader-navigation select,
+.reader-navigation button,
+.reader-tools button {
+  border: 1px solid var(--line-soft);
+  border-radius: .8rem;
+  background: rgba(255, 255, 255, .06);
+  color: var(--white);
+}
+
+.reader-navigation select {
+  width: 100%;
+  min-height: 5.75rem;
+  border: 2px solid rgba(255, 215, 132, .72);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, .1);
+  padding: 0 1.25rem;
+  color: var(--white);
+  font-size: clamp(1.15rem, 2.5vw, 1.6rem);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .22);
+}
+
+.reader-navigation select:focus-visible {
+  outline: 3px solid var(--gold-300);
+  outline-offset: 3px;
+}
+
+.reader-navigation option {
+  color: #07182d;
+}
+
+.reader-navigation button {
+  min-height: 3.8rem;
+  padding: .7rem 1rem;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.reader-navigation button:disabled,
+.reader-tools button:disabled {
+  color: var(--muted);
+  opacity: .58;
+}
+
+.reader-text {
+  margin-top: 1.35rem;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: rgba(2, 11, 22, .38);
+  padding: clamp(1.2rem, 3vw, 1.6rem);
+}
+
+.reader-text h3 {
+  margin: 0 0 .6rem;
+  color: var(--gold-300);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+.reader-text p {
+  margin: .5rem 0 0;
+  color: var(--mist);
+}
+
+.reader-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: 1rem;
+}
+
+.reader-tools button {
+  min-height: 2.7rem;
+  padding: .55rem .75rem;
+}
+
+@media (max-width: 700px) {
+  .page-background {
+    background-position: 72% center;
+  }
+
+  .hero-mission {
+    width: 100%;
+  }
+
+  .reader-heading h2 {
+    font-size: 2.5rem;
+  }
+
+  .reader-navigation {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reader-navigation select {
+    min-height: 4.75rem;
+    font-size: 1.08rem;
+  }
+}
