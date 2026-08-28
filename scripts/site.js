@@ -26,6 +26,14 @@ const readerBook = document.querySelector("#reader-book");
 const readerChapter = document.querySelector("#reader-chapter");
 const readerMessage = document.querySelector("#reader-message");
 const readerPassage = document.querySelector("#reader-passage");
+const readerFontDecrease = document.querySelector("[data-reader-font-decrease]");
+const readerFontIncrease = document.querySelector("[data-reader-font-increase]");
+const readerPrint = document.querySelector("[data-reader-print]");
+const readerDownload = document.querySelector("[data-reader-download]");
+const readerShare = document.querySelector("[data-reader-share]");
+
+let currentPassage = null;
+let readerFontScale = 1;
 
 const readerApiBase =
   window.location.hostname === "127.0.0.1" ||
@@ -37,8 +45,39 @@ const setReaderMessage = (message) => {
   if (readerMessage) readerMessage.textContent = message;
 };
 
+const readerTools = [
+  readerFontDecrease,
+  readerFontIncrease,
+  readerPrint,
+  readerDownload,
+  readerShare,
+].filter(Boolean);
+
+const setReaderToolsEnabled = (enabled) => {
+  for (const tool of readerTools) tool.disabled = !enabled;
+};
+
 const clearPassage = () => {
+  currentPassage = null;
+  setReaderToolsEnabled(false);
   if (readerPassage) readerPassage.replaceChildren();
+};
+
+const applyReaderFontScale = () => {
+  if (readerPassage) {
+    readerPassage.style.setProperty("--reader-font-scale", String(readerFontScale));
+  }
+};
+
+const passageAsText = () => {
+  if (!currentPassage) return "";
+
+  const heading = `${currentPassage.BookCode} ${currentPassage.Chapter}`;
+  const verses = currentPassage.Verses
+    .map((verse) => `${verse.Number} ${verse.Text}`)
+    .join("\n");
+
+  return `${heading}\n\n${verses}\n`;
 };
 
 const populateSelect = (select, items, getValue, getLabel, placeholder) => {
@@ -186,6 +225,7 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   }
 
   const passage = await response.json();
+  currentPassage = passage;
 
   const heading = document.createElement("h4");
   heading.textContent = `${passage.BookCode} ${passage.Chapter}`;
@@ -212,8 +252,71 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   readerPassage.dir =
     editionID === "hebwlc-ebible" ? "rtl" : "ltr";
 
+  applyReaderFontScale();
+  setReaderToolsEnabled(true);
   setReaderMessage("");
 };
+
+readerFontDecrease?.addEventListener("click", () => {
+  readerFontScale = Math.max(0.85, Number((readerFontScale - 0.1).toFixed(2)));
+  applyReaderFontScale();
+});
+
+readerFontIncrease?.addEventListener("click", () => {
+  readerFontScale = Math.min(1.5, Number((readerFontScale + 0.1).toFixed(2)));
+  applyReaderFontScale();
+});
+
+readerPrint?.addEventListener("click", () => {
+  if (currentPassage) window.print();
+});
+
+readerDownload?.addEventListener("click", () => {
+  if (!currentPassage) return;
+
+  const blob = new Blob([passageAsText()], {
+    type: "text/plain;charset=utf-8",
+  });
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download =
+    `${currentPassage.EditionID}-${currentPassage.BookCode}-${currentPassage.Chapter}.txt`;
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+});
+
+readerShare?.addEventListener("click", async () => {
+  if (!currentPassage) return;
+
+  const text = passageAsText();
+  const title = `${currentPassage.BookCode} ${currentPassage.Chapter}`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, text });
+      return;
+    }
+
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      setReaderMessage("Scripture copied to clipboard.");
+      return;
+    }
+
+    setReaderMessage("Sharing is not available in this browser.");
+  } catch (error) {
+    if (error?.name !== "AbortError") {
+      setReaderMessage("Unable to share this passage.");
+      console.error(error);
+    }
+  }
+});
 
 if (readerEdition && readerBook && readerChapter) {
   readerEdition.addEventListener("change", async () => {
