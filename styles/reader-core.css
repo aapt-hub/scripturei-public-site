@@ -332,3 +332,27 @@
     position: static;
   }
 }
+
+/* Reader desktop navigation layout */
+@media (min-width: 760px) {
+  .reader-navigation {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1rem 1.25rem;
+    align-items: end;
+  }
+
+  .reader-navigation label {
+    min-width: 0;
+  }
+
+  .reader-navigation select {
+    width: 100%;
+  }
+}
+
+@media (min-width: 1120px) {
+  .reader-navigation {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(12rem, 0.85fr) minmax(8rem, 0.45fr);
+  }
+}
