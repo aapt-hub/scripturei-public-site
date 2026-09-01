@@ -351,8 +351,12 @@
   }
 }
 
-@media (min-width: 1120px) {
+@media (min-width: 900px) {
   .reader-navigation {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(12rem, 0.85fr) minmax(8rem, 0.45fr);
+    grid-template-columns:
+      minmax(9rem, 0.9fr)
+      minmax(14rem, 1.35fr)
+      minmax(10rem, 0.85fr)
+      minmax(7rem, 0.45fr);
   }
 }
