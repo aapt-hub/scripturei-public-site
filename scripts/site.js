@@ -21,6 +21,7 @@ if (toggle && links) {
   });
 }
 
+const readerLanguage = document.querySelector("#reader-language");
 const readerEdition = document.querySelector("#reader-edition");
 const readerBook = document.querySelector("#reader-book");
 const readerChapter = document.querySelector("#reader-chapter");
@@ -34,6 +35,97 @@ const readerShare = document.querySelector("[data-reader-share]");
 
 let currentPassage = null;
 let readerFontScale = 1;
+
+let readerEditions = [];
+
+const languageNames = {
+  arb: "Arabic",
+  asm: "Assamese",
+  ben: "Bengali",
+  ceb: "Cebuano",
+  ces: "Czech",
+  ckb: "Central Kurdish",
+  cmn: "Chinese Mandarin",
+  deu: "German",
+  eng: "English",
+  ewe: "Ewe",
+  fra: "French",
+  gaz: "Oromo",
+  grc: "Greek",
+  guj: "Gujarati",
+  hat: "Haitian Creole",
+  hau: "Hausa",
+  heb: "Hebrew",
+  hbo: "Biblical Hebrew",
+  hin: "Hindi",
+  ibo: "Igbo",
+  ind: "Indonesian",
+  ita: "Italian",
+  jav: "Javanese",
+  kan: "Kannada",
+  kor: "Korean",
+  lin: "Lingala",
+  mal: "Malayalam",
+  mar: "Marathi",
+  mya: "Burmese",
+  npi: "Nepali",
+  orm: "Oromo",
+  pan: "Punjabi",
+  pes: "Persian",
+  por: "Portuguese",
+  ron: "Romanian",
+  rus: "Russian",
+  sna: "Shona",
+  spa: "Spanish",
+  srp: "Serbian",
+  swh: "Swahili",
+  tam: "Tamil",
+  tdx: "Tandroy",
+  tel: "Telugu",
+  tgl: "Tagalog",
+  uig: "Uyghur",
+  urd: "Urdu",
+  vie: "Vietnamese",
+  yor: "Yoruba",
+};
+
+const getEditionID = (edition) =>
+  edition.ID ?? edition.id ?? edition.EditionID ?? edition.editionId ?? "";
+
+const getEditionName = (edition) => {
+  const id = getEditionID(edition);
+  const name = edition.Name ?? edition.name ?? edition.DisplayName ?? edition.displayName ?? id;
+  return name && name !== id ? name : id;
+};
+
+const getLanguageCode = (edition) =>
+  edition.LanguageCode ?? edition.languageCode ?? getEditionID(edition).split("-")[0] ?? "";
+
+const getLanguageName = (code) => languageNames[code] ?? code.toUpperCase();
+
+const getLanguagesFromEditions = (editions) => {
+  const codes = [...new Set(editions.map(getLanguageCode).filter(Boolean))];
+  return codes
+    .map((code) => ({ code, name: getLanguageName(code) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const populateEditionsForLanguage = (languageCode) => {
+  const editions = readerEditions
+    .filter((edition) => getLanguageCode(edition) === languageCode)
+    .sort((a, b) => getEditionName(a).localeCompare(getEditionName(b)));
+
+  populateSelect(
+    readerEdition,
+    editions,
+    getEditionID,
+    getEditionName,
+    "Select Bible / Translation"
+  );
+
+  readerEdition.disabled = editions.length === 0;
+};
+
 
 const readerApiBase =
   window.location.hostname === "127.0.0.1" ||
@@ -99,37 +191,46 @@ const populateSelect = (select, items, getValue, getLabel, placeholder) => {
 };
 
 const loadEditions = async () => {
-  if (!readerEdition) return;
+  if (!readerLanguage || !readerEdition) return;
 
   try {
     const response = await fetch(`${readerApiBase}/v1/reader/editions`);
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      throw new Error(`Editions HTTP ${response.status}`);
     }
 
-    const editions = await response.json();
+    readerEditions = await response.json();
+    const languages = getLanguagesFromEditions(readerEditions);
 
     populateSelect(
-      readerEdition,
-      editions,
-      (edition) => edition.ID,
-      (edition) => edition.Name,
-      "Select edition"
+      readerLanguage,
+      languages,
+      (language) => language.code,
+      (language) => language.name,
+      "Select language"
     );
 
-    setReaderMessage("Select an edition to begin.");
-  } catch (error) {
     readerEdition.innerHTML =
-      '<option value="">Reader unavailable</option>';
-
+      '<option value="">Select language first</option>';
     readerEdition.disabled = true;
 
-    setReaderMessage(
-      "The Scripture reader service is currently unavailable."
-    );
-
+    setReaderMessage("Select a language to begin.");
+  } catch (error) {
+    readerLanguage.innerHTML =
+      '<option value="">Unable to load languages</option>';
+    readerLanguage.disabled = true;
+    readerEdition.innerHTML =
+      '<option value="">Unable to load Bible / Translation</option>';
+    readerEdition.disabled = true;
+    readerBook.innerHTML =
+      '<option value="">Select Bible / Translation first</option>';
+    readerBook.disabled = true;
+    readerChapter.innerHTML =
+      '<option value="">Select book first</option>';
+    readerChapter.disabled = true;
     console.error("Reader editions failed:", error);
+    setReaderMessage("Unable to load Bible editions.");
   }
 };
 
@@ -140,7 +241,7 @@ const loadBooks = async (editionID) => {
 
   if (!editionID) {
     readerBook.innerHTML =
-      '<option value="">Select edition first</option>';
+      '<option value="">Select Bible / Translation first</option>';
 
     readerChapter.innerHTML =
       '<option value="">Select book first</option>';
@@ -340,7 +441,30 @@ readerShare?.addEventListener("click", async () => {
   }
 });
 
-if (readerEdition && readerBook && readerChapter) {
+if (readerLanguage && readerEdition && readerBook && readerChapter) {
+  readerLanguage.addEventListener("change", () => {
+    clearPassage();
+
+    readerEdition.innerHTML =
+      '<option value="">Select Bible / Translation</option>';
+    readerBook.innerHTML =
+      '<option value="">Select Bible / Translation first</option>';
+    readerBook.disabled = true;
+    readerChapter.innerHTML =
+      '<option value="">Select book first</option>';
+    readerChapter.disabled = true;
+    setReaderToolsEnabled(false);
+
+    if (!readerLanguage.value) {
+      readerEdition.disabled = true;
+      setReaderMessage("Select a language to begin.");
+      return;
+    }
+
+    populateEditionsForLanguage(readerLanguage.value);
+    setReaderMessage("Select a Bible / Translation.");
+  });
+
   readerEdition.addEventListener("change", async () => {
     try {
       await loadBooks(readerEdition.value);

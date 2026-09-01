@@ -61,12 +61,19 @@
 
                 <section class="inline-reader" aria-label="Bible Reader">
           <nav class="reader-navigation" aria-label="Bible navigation">
-            <label>
-              Bible Edition
-              <select id="reader-edition" data-reader-edition>
-                <option value="">Loading editions…</option>
-              </select>
-            </label>
+                  <label>
+                    Language
+                    <select id="reader-language" data-reader-language>
+                      <option value="">Loading languages…</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Bible / Translation
+                    <select id="reader-edition" data-reader-edition disabled>
+                      <option value="">Select language first</option>
+                    </select>
+                  </label>
 
             <label>
               Book
