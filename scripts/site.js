@@ -224,17 +224,21 @@ const loadPassage = async (editionID, bookCode, chapter) => {
     throw new Error(`Passage HTTP ${response.status}`);
   }
 
-  const passage = await response.json();
-  currentPassage = passage;
+    const payload = await response.json();
+    const passage = payload.passage ?? payload.Passage ?? payload;
+    const versesPayload = passage.Verses ?? passage.verses ?? [];
+    const citation = payload.citation ?? payload.Citation ?? null;
+
+    currentPassage = payload;
 
   const heading = document.createElement("h4");
-  heading.textContent = `${passage.BookCode} ${passage.Chapter}`;
+    heading.textContent = `${passage.BookCode ?? passage.bookCode} ${passage.Chapter ?? passage.chapter}`;
   readerPassage.appendChild(heading);
 
   const verses = document.createElement("div");
   verses.className = "reader-verses";
 
-  for (const verse of passage.Verses) {
+    for (const verse of versesPayload) {
     const paragraph = document.createElement("p");
     const number = document.createElement("sup");
 
@@ -248,6 +252,24 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   }
 
   readerPassage.appendChild(verses);
+
+    if (citation) {
+      const citationText =
+        typeof citation === "string"
+          ? citation
+          : citation.passageReference ??
+            citation.PassageReference ??
+            citation.displayAttribution ??
+            citation.DisplayAttribution ??
+            "";
+
+      if (citationText) {
+        const citationParagraph = document.createElement("p");
+        citationParagraph.className = "reader-citation";
+        citationParagraph.textContent = citationText;
+        readerPassage.appendChild(citationParagraph);
+      }
+    }
 
   readerPassage.dir =
     editionID === "hebwlc-ebible" ? "rtl" : "ltr";
