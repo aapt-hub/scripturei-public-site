@@ -161,12 +161,19 @@ const applyReaderFontScale = () => {
   }
 };
 
+const getVerseLabel = (verse) =>
+  verse.Label ?? verse.label ?? verse.Number ?? verse.number ?? "";
+
+const getVerseText = (verse) => verse.Text ?? verse.text ?? "";
+
 const passageAsText = () => {
   if (!currentPassage) return "";
 
-  const heading = `${currentPassage.BookCode} ${currentPassage.Chapter}`;
-  const verses = currentPassage.Verses
-    .map((verse) => `${verse.Number} ${verse.Text}`)
+  const book = currentPassage.BookCode ?? currentPassage.bookCode ?? "";
+  const chapter = currentPassage.Chapter ?? currentPassage.chapter ?? "";
+  const heading = `${book} ${chapter}`;
+  const verses = (currentPassage.Verses ?? currentPassage.verses ?? [])
+    .map((verse) => `${getVerseLabel(verse)} ${getVerseText(verse)}`)
     .join("\n");
 
   return `${heading}\n\n${verses}\n`;
@@ -330,7 +337,7 @@ const loadPassage = async (editionID, bookCode, chapter) => {
     const versesPayload = passage.Verses ?? passage.verses ?? [];
     const citation = payload.citation ?? payload.Citation ?? null;
 
-    currentPassage = payload;
+    currentPassage = passage;
 
   const heading = document.createElement("h4");
     heading.textContent = `${passage.BookCode ?? passage.bookCode} ${passage.Chapter ?? passage.chapter}`;
@@ -343,11 +350,11 @@ const loadPassage = async (editionID, bookCode, chapter) => {
     const paragraph = document.createElement("p");
     const number = document.createElement("sup");
 
-    number.textContent = verse.Number;
+    number.textContent = getVerseLabel(verse);
 
     paragraph.appendChild(number);
     paragraph.append(" ");
-    paragraph.append(verse.Text);
+    paragraph.append(getVerseText(verse));
 
     verses.appendChild(paragraph);
   }
