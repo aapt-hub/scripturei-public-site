@@ -63,6 +63,8 @@ The current implementation was validated with:
 
 - `npm run check`: PASS.
 - API: `MISSING=401 INVALID=401 VALID=200 STATUS=200`.
-- Public Worker: editions `200`; root `200`; other Reader routes reached
-  API validation when required query parameters were absent.
-- Public UI rendered a Tagalog Bible passage.
+- Public Worker: homepage, editions, books, chapters, and passage each returned
+  `200`.
+- Public Worker deployment version: `e862784a-d4ba-4cfc-9ea1-096e77f03c74`.
+- Public UI rendered Assamese `asm-asmfb`, 1 Samuel chapter 10.
+- Merged Worker commit: `38c3cec9fe304354d74308b6cecd71da8e07f4b4`.
