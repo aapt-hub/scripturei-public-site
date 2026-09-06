@@ -79,7 +79,7 @@ for (const required of [
   "Matthew 24:14",
   "3.8 Billion",
   "Still to Reach",
-  "Bible Edition",
+  "Bible / Translation",
   "Read Scripture",
   'id="reader-edition"',
   'id="reader-book"',
