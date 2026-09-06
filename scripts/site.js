@@ -251,14 +251,27 @@ const fetchReaderEditions = async () => {
   try {
     const response = await fetch(
       `${readerApiBase}/v1/reader/editions`,
-      { signal: controller.signal }
+      {
+        signal: controller.signal,
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      }
     );
 
     if (!response.ok) {
       throw new Error(`Editions HTTP ${response.status}`);
     }
 
-    return await response.json();
+    const catalog = await response.json();
+    const editions = Array.isArray(catalog)
+      ? catalog
+      : catalog?.editions ?? catalog?.data ?? catalog?.items;
+
+    if (!Array.isArray(editions)) {
+      throw new Error("Reader editions response is not a catalog array");
+    }
+
+    return editions;
   } finally {
     window.clearTimeout(timeoutID);
   }
