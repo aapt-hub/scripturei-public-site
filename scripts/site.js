@@ -21,6 +21,44 @@ if (toggle && links) {
   });
 }
 
+const readerMode = document.querySelector("#reader-mode");
+const readerModeMessage = document.querySelector("#reader-mode-message");
+
+const readerModeDescriptions = {
+  reader: "",
+  base66: "Base66 canonical navigation uses the validated Reader data path.",
+  century: "Century browsing is not yet available in the public site.",
+  concordance:
+    "Concordance is pending a governed STRATEGi contract and validated API.",
+};
+
+const initialReaderQuery = new URLSearchParams(window.location.search);
+
+const setReaderModeMessage = (message) => {
+  if (readerModeMessage) readerModeMessage.textContent = message;
+};
+
+const setReaderModeState = (mode) => {
+  const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
+  const readerAvailable = mode === "reader" || mode === "base66";
+
+  setReaderModeMessage(description);
+
+  for (const control of [
+    readerLanguage,
+    readerEdition,
+    readerBook,
+    readerChapter,
+  ]) {
+    if (control) control.disabled = !readerAvailable;
+  }
+
+  if (!readerAvailable) {
+    clearPassage();
+    setReaderMessage(description);
+  }
+};
+
 const readerLanguage = document.querySelector("#reader-language");
 const readerEdition = document.querySelector("#reader-edition");
 const readerBook = document.querySelector("#reader-book");
@@ -254,6 +292,7 @@ const loadEditions = async () => {
       readerEdition.disabled = true;
 
       setReaderMessage("Select a language to begin.");
+      await restoreReaderQueryState();
       return;
     } catch (error) {
       lastError = error;
@@ -425,6 +464,62 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   setReaderMessage("");
 };
 
+const restoreReaderQueryState = async () => {
+  if (!readerLanguage || !readerEdition || !readerBook || !readerChapter) return;
+
+  const requestedMode = initialReaderQuery.get("readerMode");
+  if (readerMode && readerModeDescriptions[requestedMode]) {
+    readerMode.value = requestedMode;
+    setReaderModeState(requestedMode);
+  }
+
+  if (requestedMode === "century" || requestedMode === "concordance") return;
+
+  const requestedLanguage = initialReaderQuery.get("language");
+  if (
+    requestedLanguage &&
+    [...readerLanguage.options].some((option) => option.value === requestedLanguage)
+  ) {
+    readerLanguage.value = requestedLanguage;
+    populateEditionsForLanguage(requestedLanguage);
+
+    const requestedEdition = initialReaderQuery.get("edition");
+    if (
+      requestedEdition &&
+      [...readerEdition.options].some((option) => option.value === requestedEdition)
+    ) {
+      readerEdition.value = requestedEdition;
+      await loadBooks(requestedEdition);
+
+      const requestedBook = initialReaderQuery.get("book");
+      if (
+        requestedBook &&
+        [...readerBook.options].some((option) => option.value === requestedBook)
+      ) {
+        readerBook.value = requestedBook;
+        await loadChapters(requestedEdition, requestedBook);
+
+        const requestedChapter = initialReaderQuery.get("chapter");
+        if (
+          requestedChapter &&
+          [...readerChapter.options].some(
+            (option) => option.value === requestedChapter
+          )
+        ) {
+          readerChapter.value = requestedChapter;
+          await loadPassage(
+            requestedEdition,
+            requestedBook,
+            requestedChapter
+          );
+        }
+      }
+    }
+  }
+
+  syncReaderQuery();
+};
+
 readerFontDecrease?.addEventListener("click", () => {
   readerFontScale = Math.max(0.85, Number((readerFontScale - 0.1).toFixed(2)));
   applyReaderFontScale();
@@ -487,6 +582,13 @@ readerShare?.addEventListener("click", async () => {
 });
 
 if (readerLanguage && readerEdition && readerBook && readerChapter) {
+  readerMode?.addEventListener("change", () => {
+    setReaderModeState(readerMode.value);
+    syncReaderQuery();
+  });
+
+  setReaderModeState(readerMode?.value ?? "reader");
+
   readerLanguage.addEventListener("change", () => {
     clearPassage();
 
@@ -503,11 +605,13 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
     if (!readerLanguage.value) {
       readerEdition.disabled = true;
       setReaderMessage("Select a language to begin.");
+      syncReaderQuery();
       return;
     }
 
     populateEditionsForLanguage(readerLanguage.value);
     setReaderMessage("Select a Bible / Translation.");
+    syncReaderQuery();
   });
 
   readerEdition.addEventListener("change", async () => {
@@ -517,6 +621,7 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
       setReaderMessage("Unable to load books.");
       console.error(error);
     }
+    syncReaderQuery();
   });
 
   readerBook.addEventListener("change", async () => {
@@ -529,6 +634,7 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
       setReaderMessage("Unable to load chapters.");
       console.error(error);
     }
+    syncReaderQuery();
   });
 
   readerChapter.addEventListener("change", async () => {
@@ -542,6 +648,7 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
       setReaderMessage("Unable to load this chapter.");
       console.error(error);
     }
+    syncReaderQuery();
   });
 
   loadEditions();
