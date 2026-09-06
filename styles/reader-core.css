@@ -386,3 +386,63 @@
     min-width: 0 !important;
   }
 }
+
+
+/* Reader R3 — bounded responsive layout */
+@media (max-width: 700px) {
+  .inline-reader {
+    padding: clamp(.9rem, 3.5vw, 1.4rem);
+  }
+
+  .reader-navigation {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .75rem;
+  }
+
+  .reader-navigation label {
+    grid-column: 1;
+  }
+
+  .reader-navigation select {
+    min-height: 4rem;
+    padding-inline: .9rem;
+    font-size: clamp(1rem, 4.2vw, 1.2rem);
+  }
+
+  .reader-text {
+    min-height: 0;
+    padding: clamp(1rem, 3.5vw, 1.4rem);
+  }
+
+  .reader-passage {
+    max-height: min(62vh, 36rem);
+    padding-right: .25rem;
+  }
+
+  .reader-verses p {
+    font-size: calc(1.08rem * var(--reader-font-scale));
+    line-height: 1.72;
+  }
+
+  .reader-tools {
+    gap: .5rem;
+  }
+
+  .reader-tools button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .reader-heading h2 {
+    font-size: clamp(2rem, 10vw, 2.5rem);
+  }
+
+  .reader-navigation select {
+    min-height: 3.65rem;
+  }
+
+  .reader-tools button {
+    flex: 1 1 calc(50% - .5rem);
+  }
+}
