@@ -60,6 +60,17 @@
         </div>
 
                 <section class="inline-reader" aria-label="Bible Reader">
+          <div class="reader-mode" aria-label="Reader view">
+            <label for="reader-mode">View</label>
+            <select id="reader-mode">
+              <option value="reader">Reader</option>
+              <option value="base66">By Base66</option>
+              <option value="century">By Century</option>
+              <option value="concordance">By Concordance</option>
+            </select>
+            <p id="reader-mode-message" class="reader-mode-message" role="status"></p>
+          </div>
+
           <nav class="reader-navigation" aria-label="Bible navigation">
                   <label>
                     Language
