@@ -197,48 +197,86 @@ const populateSelect = (select, items, getValue, getLabel, placeholder) => {
   select.disabled = false;
 };
 
-const loadEditions = async () => {
-  if (!readerLanguage || !readerEdition) return;
+const readerEditionLoadTimeoutMs = 15000;
+const readerEditionRetryDelaysMs = [0, 500, 1500];
+
+const delay = (milliseconds) =>
+  new Promise((resolve) => window.setTimeout(resolve, milliseconds));
+
+const fetchReaderEditions = async () => {
+  const controller = new AbortController();
+  const timeoutID = window.setTimeout(
+    () => controller.abort(),
+    readerEditionLoadTimeoutMs
+  );
 
   try {
-    const response = await fetch(`${readerApiBase}/v1/reader/editions`);
+    const response = await fetch(
+      `${readerApiBase}/v1/reader/editions`,
+      { signal: controller.signal }
+    );
 
     if (!response.ok) {
       throw new Error(`Editions HTTP ${response.status}`);
     }
 
-    readerEditions = await response.json();
-    const languages = getLanguagesFromEditions(readerEditions);
-
-    populateSelect(
-      readerLanguage,
-      languages,
-      (language) => language.code,
-      (language) => language.name,
-      "Select language"
-    );
-
-    readerEdition.innerHTML =
-      '<option value="">Select language first</option>';
-    readerEdition.disabled = true;
-
-    setReaderMessage("Select a language to begin.");
-  } catch (error) {
-    readerLanguage.innerHTML =
-      '<option value="">Unable to load languages</option>';
-    readerLanguage.disabled = true;
-    readerEdition.innerHTML =
-      '<option value="">Unable to load Bible / Translation</option>';
-    readerEdition.disabled = true;
-    readerBook.innerHTML =
-      '<option value="">Select Bible / Translation first</option>';
-    readerBook.disabled = true;
-    readerChapter.innerHTML =
-      '<option value="">Select book first</option>';
-    readerChapter.disabled = true;
-    console.error("Reader editions failed:", error);
-    setReaderMessage("Unable to load Bible editions.");
+    return await response.json();
+  } finally {
+    window.clearTimeout(timeoutID);
   }
+};
+
+const loadEditions = async () => {
+  if (!readerLanguage || !readerEdition) return;
+
+  readerLanguage.disabled = true;
+  setReaderMessage("Loading languages…");
+
+  let lastError = null;
+
+  for (const retryDelay of readerEditionRetryDelaysMs) {
+    if (retryDelay > 0) await delay(retryDelay);
+
+    try {
+      readerEditions = await fetchReaderEditions();
+      const languages = getLanguagesFromEditions(readerEditions);
+
+      populateSelect(
+        readerLanguage,
+        languages,
+        (language) => language.code,
+        (language) => language.name,
+        "Select language"
+      );
+
+      readerEdition.innerHTML =
+        '<option value="">Select language first</option>';
+      readerEdition.disabled = true;
+
+      setReaderMessage("Select a language to begin.");
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  readerLanguage.innerHTML =
+    '<option value="">Unable to load languages</option>';
+  readerLanguage.disabled = true;
+  readerEdition.innerHTML =
+    '<option value="">Unable to load Bible / Translation</option>';
+  readerEdition.disabled = true;
+  readerBook.innerHTML =
+    '<option value="">Select Bible / Translation first</option>';
+  readerBook.disabled = true;
+  readerChapter.innerHTML =
+    '<option value="">Select book first</option>';
+  readerChapter.disabled = true;
+
+  console.error("Reader editions failed after retries:", lastError);
+  setReaderMessage(
+    "Unable to load languages right now. Please refresh and try again."
+  );
 };
 
 const loadBooks = async (editionID) => {
