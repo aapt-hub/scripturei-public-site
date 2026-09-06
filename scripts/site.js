@@ -63,6 +63,30 @@ const readerLanguage = document.querySelector("#reader-language");
 const readerEdition = document.querySelector("#reader-edition");
 const readerBook = document.querySelector("#reader-book");
 const readerChapter = document.querySelector("#reader-chapter");
+
+const syncReaderQuery = () => {
+  const query = new URLSearchParams(window.location.search);
+  const state = {
+    readerMode: readerMode?.value,
+    language: readerLanguage?.value,
+    edition: readerEdition?.value,
+    book: readerBook?.value,
+    chapter: readerChapter?.value,
+  };
+
+  for (const [key, value] of Object.entries(state)) {
+    if (value) query.set(key, value);
+    else query.delete(key);
+  }
+
+  const queryString = query.toString();
+  const nextURL = `${window.location.pathname}${
+    queryString ? `?${queryString}` : ""
+  }${window.location.hash}`;
+
+  window.history.replaceState(null, "", nextURL);
+};
+
 const readerMessage = document.querySelector("#reader-message");
 const readerPassage = document.querySelector("#reader-passage");
 const readerFontDecrease = document.querySelector("[data-reader-font-decrease]");
