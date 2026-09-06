@@ -446,3 +446,17 @@
     flex: 1 1 calc(50% - .5rem);
   }
 }
+
+
+/* Reader R4 — keep mobile controls out of the reading surface */
+@media (max-width: 700px) {
+  .reader-tools {
+    position: static;
+    margin-top: 1rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+}
