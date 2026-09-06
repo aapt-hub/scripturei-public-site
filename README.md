@@ -83,6 +83,19 @@ Wrangler configuration: wrangler.jsonc
 
 The Wrangler configuration already binds static assets to `./dist`.
 
+The Worker-to-Reader credential is a server-only Wrangler secret named
+`READER_API_SHARED_SECRET`. Set it with `wrangler secret put
+READER_API_SHARED_SECRET`; do not put its value in `worker.js`, `site.js`,
+`dist/`, HTML, or committed configuration. The Base66 Reader process must be
+configured with the matching server-only environment variable
+`SCRIPTUREI_READER_API_SHARED_SECRET`.
+
+The Worker forwards only the four supported Reader routes and returns `503`
+when its credential binding is missing. The current repository has no
+Cloudflare rate-limit binding or rule to preserve; configure an owner-approved
+Cloudflare rate-limit rule at the public Worker boundary if operationally
+required.
+
 ## Promotion gate
 
 Do not deploy a review branch directly to production. The intended sequence is:
