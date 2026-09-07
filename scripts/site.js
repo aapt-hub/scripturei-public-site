@@ -477,6 +477,24 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   setReaderMessage("");
 };
 
+const syncReaderQuery = () => {
+  const params = new URLSearchParams(window.location.search);
+  const values = {
+    readerMode: readerMode?.value,
+    language: readerLanguage?.value,
+    edition: readerEdition?.value,
+    book: readerBook?.value,
+    chapter: readerChapter?.value,
+  };
+  for (const [key, value] of Object.entries(values)) {
+    if (value) params.set(key, value);
+    else params.delete(key);
+  }
+  const query = params.toString();
+  const nextURL = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+  window.history.replaceState(null, "", nextURL);
+};
+
 const restoreReaderQueryState = async () => {
   if (!readerLanguage || !readerEdition || !readerBook || !readerChapter) return;
 
