@@ -131,32 +131,22 @@ for (const endpoint of [
   );
 }
 
-for (const endpoint of [
-  "/v1/base66/reader/editions",
-  "/v1/base66/reader/books",
-  "/v1/base66/reader/chapters",
-  "/v1/base66/reader/passage",
-]) {
-  assert.ok(
-    worker.includes(endpoint),
-    `Base66 Reader projection endpoint missing from Worker: ${endpoint}`
-  );
-}
+
 
 assert.ok(
-  js.includes('base66: "Base66 public Reader projection."'),
+  js.includes('base66: "Base66 source projection is awaiting the governed six-edition release."'),
   "Base66 mode description is missing"
 );
 
 assert.ok(
-  js.includes('const readerAvailable = mode === "reader" || mode === "base66";'),
+  js.includes('const readerAvailable = mode === "reader";'),
   "Base66 mode must use the bounded Reader data path"
 );
 
-assert.ok(
-  js.includes('readerMode?.value === "base66"') &&
-    js.includes('"/v1/base66"'),
-  "Base66 Reader route binding is missing"
+assert.equal(
+  worker.includes("/v1/base66"),
+  false,
+  "Public Base66 proxy must remain fail-closed until the governed projection exists"
 );
 
 assert.ok(

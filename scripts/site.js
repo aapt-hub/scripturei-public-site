@@ -26,7 +26,7 @@ const readerModeMessage = document.querySelector("#reader-mode-message");
 
 const readerModeDescriptions = {
   reader: "",
-  base66: "Base66 public Reader projection.",
+  base66: "Base66 source projection is awaiting the governed six-edition release.",
   century: "Century browsing is not yet available in the public site.",
   concordance:
     "Concordance is pending a governed STRATEGi contract and validated API.",
@@ -40,7 +40,7 @@ const setReaderModeMessage = (message) => {
 
 const setReaderModeState = (mode) => {
   const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
-  const readerAvailable = mode === "reader" || mode === "base66";
+  const readerAvailable = mode === "reader";
 
   setReaderModeMessage(description);
 
@@ -176,13 +176,7 @@ const readerApiBase =
     ? "http://127.0.0.1:8777"
     : "";
 
-const readerApiPrefix = () =>
-  readerMode?.value === "base66"
-    ? window.location.hostname === "127.0.0.1" ||
-      window.location.hostname === "localhost"
-      ? "http://127.0.0.1:8666/v1"
-      : "/v1/base66"
-    : `${readerApiBase}/v1`;
+const readerApiPrefix = () => `${readerApiBase}/v1`;
 
 const setReaderMessage = (message) => {
   if (readerMessage) readerMessage.textContent = message;
@@ -685,10 +679,15 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
     setReaderModeState(readerMode.value);
     syncReaderQuery();
 
-    if (readerMode.value === "reader" || readerMode.value === "base66") {
+    if (readerMode.value === "reader") {
       await loadEditions();
     }
   });
+
+  const requestedMode = initialReaderQuery.get("readerMode");
+  if (requestedMode && readerModeDescriptions[requestedMode]) {
+    readerMode.value = requestedMode;
+  }
 
   setReaderModeState(readerMode?.value ?? "reader");
 
@@ -754,5 +753,7 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
     syncReaderQuery();
   });
 
-  loadEditions();
+  if (readerMode?.value === "reader") {
+    loadEditions();
+  }
 }
