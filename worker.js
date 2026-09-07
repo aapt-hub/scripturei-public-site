@@ -5,12 +5,6 @@ const READER_PATHS = new Set([
   "/v1/reader/passage",
 ]);
 
-const BASE66_PATHS = new Set([
-  "/v1/status",
-  "/v1/identity",
-  "/v1/reference/query",
-  "/v1/reference/context",
-]);
 
 const unavailable = (message) =>
   new Response(message, {
@@ -61,26 +55,6 @@ export default {
 
       return proxyRequest(request, "reader-api.scripturei.org", {
         Authorization: `Bearer ${secret}`,
-      });
-    }
-
-    if (BASE66_PATHS.has(url.pathname)) {
-      const clientID =
-        typeof env.BASE66_EDGE_ACCESS_CLIENT_ID === "string"
-          ? env.BASE66_EDGE_ACCESS_CLIENT_ID.trim()
-          : "";
-      const clientSecret =
-        typeof env.BASE66_EDGE_ACCESS_CLIENT_SECRET === "string"
-          ? env.BASE66_EDGE_ACCESS_CLIENT_SECRET.trim()
-          : "";
-
-      if (!clientID || !clientSecret) {
-        return unavailable("Base66 temporarily unavailable");
-      }
-
-      return proxyRequest(request, "base66.scripturei.org", {
-        "CF-Access-Client-Id": clientID,
-        "CF-Access-Client-Secret": clientSecret,
       });
     }
 
