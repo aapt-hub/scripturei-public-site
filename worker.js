@@ -1,3 +1,10 @@
+const BASE66_READER_PATHS = new Set([
+  "/v1/base66/reader/editions",
+  "/v1/base66/reader/books",
+  "/v1/base66/reader/chapters",
+  "/v1/base66/reader/passage",
+]);
+
 const READER_PATHS = new Set([
   "/v1/reader/editions",
   "/v1/reader/books",
@@ -44,6 +51,48 @@ const proxyRequest = (request, hostname, extraHeaders = {}) => {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (BASE66_READER_PATHS.has(url.pathname)) {
+      const clientId =
+        typeof env.BASE66_EDGE_ACCESS_CLIENT_ID === "string"
+          ? env.BASE66_EDGE_ACCESS_CLIENT_ID.trim()
+          : "";
+      const clientSecret =
+        typeof env.BASE66_EDGE_ACCESS_CLIENT_SECRET === "string"
+          ? env.BASE66_EDGE_ACCESS_CLIENT_SECRET.trim()
+          : "";
+
+      if (!clientId || !clientSecret) {
+        return unavailable("Base66 Reader temporarily unavailable");
+      }
+
+      if (request.method !== "GET" && request.method !== "HEAD") {
+        return new Response("Method Not Allowed", {
+          status: 405,
+          headers: { "cache-control": "no-store" },
+        });
+      }
+
+      const upstream = new URL(request.url);
+      upstream.protocol = "https:";
+      upstream.hostname = "base66.scripturei.org";
+      upstream.pathname = url.pathname.replace("/v1/base66", "");
+      upstream.port = "";
+
+      const headers = new Headers(request.headers);
+      headers.delete("host");
+      headers.set("CF-Access-Client-Id", clientId);
+      headers.set("CF-Access-Client-Secret", clientSecret);
+      headers.set("Accept", "application/json");
+
+      return fetch(
+        new Request(upstream.toString(), {
+          method: request.method,
+          headers,
+          redirect: request.redirect,
+        })
+      );
+    }
 
     if (READER_PATHS.has(url.pathname)) {
       const secret =
