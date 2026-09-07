@@ -12,6 +12,7 @@ const requiredFiles = [
   "styles/site.css",
   "styles/reader-core.css",
   "scripts/site.js",
+  "worker.js",
   "public/_headers",
   "README.md",
   "package.json",
@@ -124,24 +125,37 @@ for (const endpoint of [
   "/v1/reader/passage",
 ]) {
   assert.ok(
-    js.includes(endpoint),
-    `Reader endpoint missing: ${endpoint}`
+    worker.includes(endpoint),
+    `Reader endpoint missing from Worker: ${endpoint}`
+  );
+}
+
+for (const endpoint of [
+  "/v1/base66/reader/editions",
+  "/v1/base66/reader/books",
+  "/v1/base66/reader/chapters",
+  "/v1/base66/reader/passage",
+]) {
+  assert.ok(
+    worker.includes(endpoint),
+    `Base66 Reader projection endpoint missing from Worker: ${endpoint}`
   );
 }
 
 assert.ok(
-  js.includes('base66: "Base66 navigation is not connected yet."'),
-  "Base66 mode must expose the fail-closed message"
+  js.includes('base66: "Base66 public Reader projection."'),
+  "Base66 mode description is missing"
 );
 
 assert.ok(
-  js.includes('const readerAvailable = mode === "reader";'),
-  "Base66 mode must not reuse the Reader data path"
+  js.includes('const readerAvailable = mode === "reader" || mode === "base66";'),
+  "Base66 mode must use the bounded Reader data path"
 );
 
 assert.ok(
-  js.includes('requestedMode === "base66"'),
-  "Base66 query state must remain fail-closed"
+  js.includes('readerMode?.value === "base66"') &&
+    js.includes('"/v1/base66"'),
+  "Base66 Reader route binding is missing"
 );
 
 assert.ok(
@@ -206,7 +220,8 @@ const absoluteUrls =
 
 for (const url of absoluteUrls) {
   assert.ok(
-    url.startsWith("http://127.0.0.1:8777"),
+    url.startsWith("http://127.0.0.1:8777") ||
+      url.startsWith("http://127.0.0.1:8666"),
     `Unapproved external network reference detected: ${url}`
   );
 }
