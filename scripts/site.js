@@ -26,7 +26,7 @@ const readerModeMessage = document.querySelector("#reader-mode-message");
 
 const readerModeDescriptions = {
   reader: "",
-  base66: "Base66 navigation is not connected yet.",
+  base66: "Base66 public Reader projection.",
   century: "Century browsing is not yet available in the public site.",
   concordance:
     "Concordance is pending a governed STRATEGi contract and validated API.",
@@ -40,7 +40,7 @@ const setReaderModeMessage = (message) => {
 
 const setReaderModeState = (mode) => {
   const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
-  const readerAvailable = mode === "reader";
+  const readerAvailable = mode === "reader" || mode === "base66";
 
   setReaderModeMessage(description);
 
@@ -54,7 +54,9 @@ const setReaderModeState = (mode) => {
   }
 
   if (readerAvailable) {
-    restoreReaderSelectionState();
+    resetReaderSelectionState();
+    clearPassage();
+    setReaderMessage("Loading languages…");
   } else {
     resetReaderSelectionState();
     clearPassage();
@@ -174,6 +176,14 @@ const readerApiBase =
     ? "http://127.0.0.1:8777"
     : "";
 
+const readerApiPrefix = () =>
+  readerMode?.value === "base66"
+    ? window.location.hostname === "127.0.0.1" ||
+      window.location.hostname === "localhost"
+      ? "http://127.0.0.1:8666/v1"
+      : "/v1/base66"
+    : `${readerApiBase}/v1`;
+
 const setReaderMessage = (message) => {
   if (readerMessage) readerMessage.textContent = message;
 };
@@ -253,7 +263,7 @@ const fetchReaderEditions = async () => {
 
   try {
     const response = await fetch(
-      `${readerApiBase}/v1/reader/editions`,
+      `${readerApiPrefix()}/reader/editions`,
       {
         signal: controller.signal,
         cache: "no-store",
@@ -352,7 +362,7 @@ const loadBooks = async (editionID) => {
   setReaderMessage("Loading books…");
 
   const response = await fetch(
-    `${readerApiBase}/v1/reader/books?edition=${encodeURIComponent(editionID)}`
+    `${readerApiPrefix()}/reader/books?edition=${encodeURIComponent(editionID)}`
   );
 
   if (!response.ok) {
@@ -384,7 +394,7 @@ const loadChapters = async (editionID, bookCode) => {
   setReaderMessage("Loading chapters…");
 
   const response = await fetch(
-    `${readerApiBase}/v1/reader/chapters?edition=${encodeURIComponent(
+    `${readerApiPrefix()}/reader/chapters?edition=${encodeURIComponent(
       editionID
     )}&book=${encodeURIComponent(bookCode)}`
   );
@@ -414,7 +424,7 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   setReaderMessage("Loading Scripture…");
 
   const response = await fetch(
-    `${readerApiBase}/v1/reader/passage?edition=${encodeURIComponent(
+    `${readerApiPrefix()}/reader/passage?edition=${encodeURIComponent(
       editionID
     )}&book=${encodeURIComponent(
       bookCode
@@ -671,9 +681,13 @@ readerShare?.addEventListener("click", async () => {
 });
 
 if (readerLanguage && readerEdition && readerBook && readerChapter) {
-  readerMode?.addEventListener("change", () => {
+  readerMode?.addEventListener("change", async () => {
     setReaderModeState(readerMode.value);
     syncReaderQuery();
+
+    if (readerMode.value === "reader" || readerMode.value === "base66") {
+      await loadEditions();
+    }
   });
 
   setReaderModeState(readerMode?.value ?? "reader");
