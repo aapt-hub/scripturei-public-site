@@ -26,7 +26,7 @@ const readerModeMessage = document.querySelector("#reader-mode-message");
 
 const readerModeDescriptions = {
   reader: "",
-  base66: "Base66 public Reader projection.",,
+  base66: "Base66 public Reader projection.",
   century: "Century browsing is not yet available in the public site.",
   concordance:
     "Concordance is pending a governed STRATEGi contract and validated API.",
@@ -182,7 +182,7 @@ const readerApiPrefix = () =>
       window.location.hostname === "localhost"
       ? "http://127.0.0.1:8666/v1"
       : "/v1/base66"
-    : `${readerApiBase}/v1";
+    : `${readerApiBase}/v1`;
 
 const setReaderMessage = (message) => {
   if (readerMessage) readerMessage.textContent = message;
