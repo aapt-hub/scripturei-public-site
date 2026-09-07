@@ -58,6 +58,7 @@ for (const forbidden of [
   "googletagmanager.com",
   "facebook.net",
   "api.bible",
+  "Base66 canonical navigation uses the validated Reader data path.",
   "<form",
   "localStorage",
   "sessionStorage",
@@ -80,6 +81,7 @@ for (const required of [
   "3.8 Billion",
   "Still to Reach",
   "Bible / Translation",
+  "Base66 navigation is not connected yet.",
   "Read Scripture",
   'id="reader-edition"',
   'id="reader-book"',
@@ -127,6 +129,16 @@ for (const endpoint of [
     `Reader endpoint missing: ${endpoint}`
   );
 }
+
+assert.ok(
+  js.includes('const readerAvailable = mode === "reader";'),
+  "Base66 mode must not reuse the Reader data path"
+);
+
+assert.ok(
+  js.includes('requestedMode === "base66"'),
+  "Base66 query state must remain fail-closed"
+);
 
 assert.ok(
   js.includes('window.location.hostname === "127.0.0.1"') &&
