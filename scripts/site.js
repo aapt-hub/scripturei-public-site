@@ -26,7 +26,7 @@ const readerModeMessage = document.querySelector("#reader-mode-message");
 
 const readerModeDescriptions = {
   reader: "",
-  base66: "Base66 canonical navigation uses the validated Reader data path.",
+  base66: "Base66 navigation is not connected yet."
   century: "Century browsing is not yet available in the public site.",
   concordance:
     "Concordance is pending a governed STRATEGi contract and validated API.",
@@ -40,7 +40,7 @@ const setReaderModeMessage = (message) => {
 
 const setReaderModeState = (mode) => {
   const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
-  const readerAvailable = mode === "reader" || mode === "base66";
+  const readerAvailable = mode === "reader";
 
   setReaderModeMessage(description);
 
@@ -486,7 +486,7 @@ const restoreReaderQueryState = async () => {
     setReaderModeState(requestedMode);
   }
 
-  if (requestedMode === "century" || requestedMode === "concordance") return;
+  if (requestedMode === "base66" || requestedMode === "century" || requestedMode === "concordance") return;
 
   const requestedLanguage = initialReaderQuery.get("language");
   if (
