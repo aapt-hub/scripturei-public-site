@@ -53,7 +53,10 @@ const setReaderModeState = (mode) => {
     if (control) control.disabled = !readerAvailable;
   }
 
-  if (!readerAvailable) {
+  if (readerAvailable) {
+    restoreReaderSelectionState();
+  } else {
+    resetReaderSelectionState();
     clearPassage();
     setReaderMessage(description);
   }
@@ -493,6 +496,61 @@ const syncReaderQuery = () => {
   const query = params.toString();
   const nextURL = query ? `${window.location.pathname}?${query}` : window.location.pathname;
   window.history.replaceState(null, "", nextURL);
+};
+
+const resetReaderSelectionState = () => {
+  if (readerLanguage) {
+    readerLanguage.value = "";
+    readerLanguage.innerHTML = '<option value="">Select language</option>';
+  }
+
+  if (readerEdition) {
+    readerEdition.value = "";
+    readerEdition.innerHTML =
+      '<option value="">Select language first</option>';
+  }
+
+  if (readerBook) {
+    readerBook.value = "";
+    readerBook.innerHTML =
+      '<option value="">Select Bible / Translation first</option>';
+  }
+
+  if (readerChapter) {
+    readerChapter.value = "";
+    readerChapter.innerHTML =
+      '<option value="">Select book first</option>';
+  }
+};
+
+const restoreReaderSelectionState = () => {
+  if (
+    !readerLanguage ||
+    !readerEdition ||
+    !readerBook ||
+    !readerChapter ||
+    readerEditions.length === 0
+  ) {
+    return;
+  }
+
+  populateSelect(
+    readerLanguage,
+    getLanguagesFromEditions(readerEditions),
+    (language) => language.code,
+    (language) => language.name,
+    "Select language"
+  );
+
+  readerEdition.innerHTML =
+    '<option value="">Select language first</option>';
+  readerEdition.disabled = true;
+  readerBook.innerHTML =
+    '<option value="">Select Bible / Translation first</option>';
+  readerBook.disabled = true;
+  readerChapter.innerHTML =
+    '<option value="">Select book first</option>';
+  readerChapter.disabled = true;
 };
 
 const restoreReaderQueryState = async () => {
