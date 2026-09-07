@@ -76,7 +76,7 @@ export default {
       const upstream = new URL(request.url);
       upstream.protocol = "https:";
       upstream.hostname = "base66.scripturei.org";
-      upstream.pathname = url.pathname.replace("/v1/base66", "");
+      upstream.pathname = url.pathname.replace("/v1/base66", "/v1");
       upstream.port = "";
 
       const headers = new Headers(request.headers);
