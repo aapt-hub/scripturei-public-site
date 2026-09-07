@@ -81,7 +81,6 @@ for (const required of [
   "3.8 Billion",
   "Still to Reach",
   "Bible / Translation",
-  "Base66 navigation is not connected yet.",
   "Read Scripture",
   'id="reader-edition"',
   'id="reader-book"',
@@ -129,6 +128,11 @@ for (const endpoint of [
     `Reader endpoint missing: ${endpoint}`
   );
 }
+
+assert.ok(
+  js.includes('base66: "Base66 navigation is not connected yet."'),
+  "Base66 mode must expose the fail-closed message"
+);
 
 assert.ok(
   js.includes('const readerAvailable = mode === "reader";'),
