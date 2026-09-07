@@ -22,12 +22,13 @@ for (const path of requiredFiles) {
   await access(resolve(projectRoot, path), constants.R_OK);
 }
 
-const [html, css, readerCss, js, headers, backgroundStats] =
+const [html, css, readerCss, js, worker, headers, backgroundStats] =
   await Promise.all([
     readFile(resolve(projectRoot, "index.html"), "utf8"),
     readFile(resolve(projectRoot, "styles/site.css"), "utf8"),
     readFile(resolve(projectRoot, "styles", "reader-core.css"), "utf8"),
     readFile(resolve(projectRoot, "scripts", "site.js"), "utf8"),
+    readFile(resolve(projectRoot, "worker.js"), "utf8"),
     readFile(resolve(projectRoot, "public", "_headers"), "utf8"),
     stat(resolve(projectRoot, "assets", "background.webp")),
   ]);
