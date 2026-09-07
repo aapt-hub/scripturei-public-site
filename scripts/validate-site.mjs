@@ -134,19 +134,28 @@ for (const endpoint of [
 
 
 assert.ok(
-  js.includes('base66: "Base66 source projection is awaiting the governed six-edition release."'),
+  js.includes('base66: "Base66 reference editions (six-source projection)."'),
   "Base66 mode description is missing"
 );
 
 assert.ok(
-  js.includes('const readerAvailable = mode === "reader";'),
-  "Base66 mode must use the bounded Reader data path"
+  js.includes('const readerAvailable = mode === "reader" || mode === "base66";') &&
+    js.includes('readerMode?.value === "base66"') &&
+    [
+      "grcbyz-ebible",
+      "grclxx-ebible",
+      "grcmt-ebible",
+      "grctcgnt-ebible",
+      "grctr-ebible",
+      "hebwlc-ebible",
+    ].every((editionID) => js.includes(editionID)),
+  "Base66 mode must use the bounded six-source Reader data path"
 );
 
 assert.equal(
   worker.includes("/v1/base66"),
   false,
-  "Public Base66 proxy must remain fail-closed until the governed projection exists"
+  "Public Worker must not expose a separate Base66 API route"
 );
 
 assert.ok(

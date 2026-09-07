@@ -26,11 +26,20 @@ const readerModeMessage = document.querySelector("#reader-mode-message");
 
 const readerModeDescriptions = {
   reader: "",
-  base66: "Base66 source projection is awaiting the governed six-edition release.",
+  base66: "Base66 reference editions (six-source projection).",
   century: "Century browsing is not yet available in the public site.",
   concordance:
     "Concordance is pending a governed STRATEGi contract and validated API.",
 };
+
+const base66EditionIDs = new Set([
+  "grcbyz-ebible",
+  "grclxx-ebible",
+  "grcmt-ebible",
+  "grctcgnt-ebible",
+  "grctr-ebible",
+  "hebwlc-ebible",
+]);
 
 const initialReaderQuery = new URLSearchParams(window.location.search);
 
@@ -40,7 +49,7 @@ const setReaderModeMessage = (message) => {
 
 const setReaderModeState = (mode) => {
   const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
-  const readerAvailable = mode === "reader";
+  const readerAvailable = mode === "reader" || mode === "base66";
 
   setReaderModeMessage(description);
 
@@ -296,7 +305,18 @@ const loadEditions = async () => {
     if (retryDelay > 0) await delay(retryDelay);
 
     try {
-      readerEditions = await fetchReaderEditions();
+      const fetchedEditions = await fetchReaderEditions();
+      readerEditions =
+        readerMode?.value === "base66"
+          ? fetchedEditions.filter((edition) =>
+              base66EditionIDs.has(getEditionID(edition))
+            )
+          : fetchedEditions;
+
+      if (readerMode?.value === "base66" && readerEditions.length === 0) {
+        throw new Error("Base66 reader editions are unavailable");
+      }
+
       const languages = getLanguagesFromEditions(readerEditions);
 
       populateSelect(
@@ -566,7 +586,7 @@ const restoreReaderQueryState = async () => {
     setReaderModeState(requestedMode);
   }
 
-  if (requestedMode === "base66" || requestedMode === "century" || requestedMode === "concordance") return;
+  if (requestedMode === "century" || requestedMode === "concordance") return;
 
   const requestedLanguage = initialReaderQuery.get("language");
   if (
@@ -679,7 +699,7 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
     setReaderModeState(readerMode.value);
     syncReaderQuery();
 
-    if (readerMode.value === "reader") {
+    if (readerMode.value === "reader" || readerMode.value === "base66") {
       await loadEditions();
     }
   });
@@ -753,7 +773,7 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
     syncReaderQuery();
   });
 
-  if (readerMode?.value === "reader") {
+  if (readerMode?.value === "reader" || readerMode?.value === "base66") {
     loadEditions();
   }
 }
