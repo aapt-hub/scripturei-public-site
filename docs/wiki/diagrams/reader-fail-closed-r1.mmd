@@ -1,0 +1,9 @@
+stateDiagram-v2
+    [*] --> Request
+    Request --> Authorized: protected route + valid server credential
+    Request --> ServiceUnavailable: missing Worker secret
+    Request --> Unauthorized: invalid/missing origin credential
+    Authorized --> ReaderResponse
+    ServiceUnavailable --> [*]
+    Unauthorized --> [*]
+    ReaderResponse --> [*]
