@@ -1,0 +1,9 @@
+flowchart LR
+    U[Browser]
+    W[Cloudflare Worker]
+    A[Authenticated Reader API]
+    B[Governed Base66 / Reader data]
+
+    U -->|HTTPS| W
+    W -->|protected Reader routes| A
+    A -->|read-only governed content| B
