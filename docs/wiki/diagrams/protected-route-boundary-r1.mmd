@@ -1,0 +1,16 @@
+flowchart TD
+    R{Request path}
+    E[/v1/reader/editions]
+    B[/v1/reader/books]
+    C[/v1/reader/chapters]
+    P[/v1/reader/passage]
+    S[/v1/status]
+    X[Public assets / site content]
+    AUTH[Inject server-side Reader credential]
+
+    R --> E --> AUTH
+    R --> B --> AUTH
+    R --> C --> AUTH
+    R --> P --> AUTH
+    R --> S
+    R --> X
