@@ -226,6 +226,23 @@ const getEditionCentury = (edition) => {
     if (century) return century;
   }
 
+  // Spanning witnesses are assigned to the later century.
+  for (const value of [
+    edition.DateTo,
+    edition.dateTo,
+    edition.YearTo,
+    edition.yearTo,
+    edition.EndYear,
+    edition.endYear,
+    edition.LatestYear,
+    edition.latestYear,
+  ]) {
+    const year = Number.parseInt(value, 10);
+    if (Number.isFinite(year) && year >= 1 && year <= 2000) {
+      return Math.ceil(year / 100);
+    }
+  }
+
   for (const value of [
     edition.DateFrom,
     edition.dateFrom,
