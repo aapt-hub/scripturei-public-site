@@ -88,6 +88,7 @@ const readerDownload = document.querySelector("[data-reader-download]");
 const readerShare = document.querySelector("[data-reader-share]");
 
 let currentPassage = null;
+let currentCitation = null;
 let readerFontScale = 1;
 
 let readerEditions = [];
@@ -358,6 +359,7 @@ const setReaderToolsEnabled = (enabled) => {
 
 const clearPassage = () => {
   currentPassage = null;
+  currentCitation = null;
   setReaderToolsEnabled(false);
   if (readerPassage) readerPassage.replaceChildren();
 };
@@ -383,7 +385,41 @@ const passageAsText = () => {
     .map((verse) => `${getVerseLabel(verse)} ${getVerseText(verse)}`)
     .join("\n");
 
-  return `${heading}\n\n${verses}\n`;
+  const citation =
+    currentCitation?.passageReference ??
+    currentCitation?.PassageReference ??
+    "";
+
+  const citationDetails = [];
+  const editionTitle =
+    currentCitation?.editionTitle ??
+    currentCitation?.EditionTitle ??
+    "";
+  const publicationYear =
+    currentCitation?.publicationYear ??
+    currentCitation?.PublicationYear ??
+    "";
+  const sourceUrl =
+    currentCitation?.sourceUrl ??
+    currentCitation?.SourceURL ??
+    "";
+  const accessedDate =
+    currentCitation?.accessedDate ??
+    currentCitation?.AccessedDate ??
+    "";
+
+  if (editionTitle) citationDetails.push(`Edition: ${editionTitle}`);
+  if (publicationYear) citationDetails.push(`Publication year: ${publicationYear}`);
+  if (sourceUrl) citationDetails.push(`Source: ${sourceUrl}`);
+  if (accessedDate) citationDetails.push(`Accessed: ${accessedDate}`);
+
+  const citationBlock = citation
+    ? `\nTurabian Citation\n${citation}${
+        citationDetails.length ? `\n${citationDetails.join("\n")}` : ""
+      }\n`
+    : "";
+
+  return `${heading}\n\n${verses}\n${citationBlock}`;
 };
 
 const populateSelect = (select, items, getValue, getLabel, placeholder) => {
@@ -633,6 +669,7 @@ const loadPassage = async (editionID, bookCode, chapter) => {
     const citation = payload.citation ?? payload.Citation ?? null;
 
     currentPassage = passage;
+    currentCitation = citation;
 
   const heading = document.createElement("h4");
     heading.textContent = `${passage.BookCode ?? passage.bookCode} ${passage.Chapter ?? passage.chapter}`;
