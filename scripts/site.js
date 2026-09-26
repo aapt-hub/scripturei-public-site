@@ -42,6 +42,7 @@ const base66EditionIDs = new Set([
 ]);
 
 const initialReaderQuery = new URLSearchParams(window.location.search);
+let initialReaderQueryRestored = false;
 
 const setReaderModeMessage = (message) => {
   if (readerModeMessage) readerModeMessage.textContent = message;
@@ -448,8 +449,26 @@ const fetchReaderEditions = async () => {
 const loadEditions = async () => {
   if (!readerLanguage || !readerEdition) return;
 
-  readerLanguage.disabled = true;
-  setReaderMessage("Loading languages…");
+  const centuryMode = readerMode?.value === "century";
+
+  if (centuryMode) {
+    setPrimaryReaderLabel("Century");
+    populateSelect(
+      readerLanguage,
+      getCenturyOptions(),
+      (century) => century.code,
+      (century) => century.name,
+      "Select century"
+    );
+    readerEdition.innerHTML =
+      '<option value="">Select century first</option>';
+    readerEdition.disabled = true;
+    setReaderMessage("Select a century from I to XX.");
+  } else {
+    setPrimaryReaderLabel("Language");
+    readerLanguage.disabled = true;
+    setReaderMessage("Loading languages…");
+  }
 
   let lastError = null;
 
@@ -471,16 +490,6 @@ const loadEditions = async () => {
 
       if (readerMode?.value === "century") {
         setPrimaryReaderLabel("Century");
-        populateSelect(
-          readerLanguage,
-          getCenturyOptions(),
-          (century) => century.code,
-          (century) => century.name,
-          "Select century"
-        );
-        readerEdition.innerHTML =
-          '<option value="">Select century first</option>';
-        readerEdition.disabled = true;
         setReaderMessage("Select a century from I to XX.");
       } else {
         setPrimaryReaderLabel("Language");
@@ -749,7 +758,9 @@ const restoreReaderSelectionState = () => {
 
 const restoreReaderQueryState = async () => {
   if (!readerLanguage || !readerEdition || !readerBook || !readerChapter) return;
+  if (initialReaderQueryRestored) return;
 
+  initialReaderQueryRestored = true;
   const requestedMode = initialReaderQuery.get("readerMode");
   if (readerMode && readerModeDescriptions[requestedMode]) {
     readerMode.value = requestedMode;
@@ -919,6 +930,9 @@ readerShare?.addEventListener("click", async () => {
 
 if (readerLanguage && readerEdition && readerBook && readerChapter) {
   readerMode?.addEventListener("change", async () => {
+    setPrimaryReaderLabel(
+      readerMode.value === "century" ? "Century" : "Language"
+    );
     setReaderModeState(readerMode.value);
     syncReaderQuery();
 
