@@ -27,7 +27,7 @@ const readerModeMessage = document.querySelector("#reader-mode-message");
 const readerModeDescriptions = {
   reader: "",
   base66: "Base66 reference editions (six-source projection).",
-  century: "Century browsing is not yet available in the public site.",
+  century: "Browse published Scripture witnesses by century (I–XX).",
   concordance:
     "Concordance is pending a governed STRATEGi contract and validated API.",
 };
@@ -49,7 +49,8 @@ const setReaderModeMessage = (message) => {
 
 const setReaderModeState = (mode) => {
   const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
-  const readerAvailable = mode === "reader" || mode === "base66";
+  const readerAvailable =
+    mode === "reader" || mode === "base66" || mode === "century";
 
   setReaderModeMessage(description);
 
@@ -167,6 +168,127 @@ const getLanguageCode = (edition) =>
   edition.LanguageCode ?? edition.languageCode ?? getEditionID(edition).split("-")[0] ?? "";
 
 const getLanguageName = (code) => languageNames[code] ?? code.toUpperCase();
+
+const romanCenturies = [
+  ["I", 1, "1–100 CE"],
+  ["II", 2, "101–200 CE"],
+  ["III", 3, "201–300 CE"],
+  ["IV", 4, "301–400 CE"],
+  ["V", 5, "401–500 CE"],
+  ["VI", 6, "501–600 CE"],
+  ["VII", 7, "601–700 CE"],
+  ["VIII", 8, "701–800 CE"],
+  ["IX", 9, "801–900 CE"],
+  ["X", 10, "901–1000 CE"],
+  ["XI", 11, "1001–1100 CE"],
+  ["XII", 12, "1101–1200 CE"],
+  ["XIII", 13, "1201–1300 CE"],
+  ["XIV", 14, "1301–1400 CE"],
+  ["XV", 15, "1401–1500 CE"],
+  ["XVI", 16, "1501–1600 CE"],
+  ["XVII", 17, "1601–1700 CE"],
+  ["XVIII", 18, "1701–1800 CE"],
+  ["XIX", 19, "1801–1900 CE"],
+  ["XX", 20, "1901–2000 CE"],
+];
+
+const romanToCentury = new Map(
+  romanCenturies.map(([roman, number]) => [roman, number])
+);
+
+const normalizeCentury = (value) => {
+  if (value == null || value === "") return null;
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value >= 1 && value <= 20 ? Math.trunc(value) : null;
+  }
+
+  const text = String(value).trim().toUpperCase();
+  if (romanToCentury.has(text)) return romanToCentury.get(text);
+
+  const match = text.match(/^(\d{1,2})(?:ST|ND|RD|TH)?(?:\s*CENTURY)?(?:\s*CE)?$/);
+  if (match) {
+    const number = Number(match[1]);
+    return number >= 1 && number <= 20 ? number : null;
+  }
+
+  return null;
+};
+
+const getEditionCentury = (edition) => {
+  for (const value of [
+    edition.Century,
+    edition.century,
+    edition.CenturyNumber,
+    edition.centuryNumber,
+  ]) {
+    const century = normalizeCentury(value);
+    if (century) return century;
+  }
+
+  for (const value of [
+    edition.DateFrom,
+    edition.dateFrom,
+    edition.YearFrom,
+    edition.yearFrom,
+    edition.StartYear,
+    edition.startYear,
+    edition.EarliestYear,
+    edition.earliestYear,
+  ]) {
+    const year = Number.parseInt(value, 10);
+    if (Number.isFinite(year) && year >= 1 && year <= 2000) {
+      return Math.ceil(year / 100);
+    }
+  }
+
+  return null;
+};
+
+const getCenturyOptions = () =>
+  romanCenturies.map(([roman, number, range]) => ({
+    code: String(number),
+    name: `${roman} — ${range}`,
+  }));
+
+const populateEditionsForCentury = (centuryValue) => {
+  const century = Number(centuryValue);
+  const editions = readerEditions
+    .filter((edition) => getEditionCentury(edition) === century)
+    .sort((a, b) => getEditionName(a).localeCompare(getEditionName(b)));
+
+  populateSelect(
+    readerEdition,
+    editions,
+    getEditionID,
+    getEditionName,
+    editions.length
+      ? "Select Bible / Manuscript / Historical Edition"
+      : "No published witnesses in this century"
+  );
+
+  readerEdition.disabled = editions.length === 0;
+};
+
+const setPrimaryReaderLabel = (text) => {
+  const label = readerLanguage?.closest("label");
+  if (!label) return;
+
+  let marker = label.querySelector("[data-reader-primary-label]");
+  if (!marker) {
+    const textNode = [...label.childNodes].find(
+      (node) => node.nodeType === Node.TEXT_NODE && node.textContent.trim()
+    );
+    marker = document.createElement("span");
+    marker.dataset.readerPrimaryLabel = "";
+    if (textNode) {
+      textNode.replaceWith(marker);
+    } else {
+      label.prepend(marker);
+    }
+  }
+  marker.textContent = text;
+};
 
 const getLanguagesFromEditions = (editions) => {
   const codes = [...new Set(editions.map(getLanguageCode).filter(Boolean))];
@@ -330,21 +452,38 @@ const loadEditions = async () => {
         throw new Error("Base66 reader editions are unavailable");
       }
 
-      const languages = getLanguagesFromEditions(readerEditions);
+      if (readerMode?.value === "century") {
+        setPrimaryReaderLabel("Century");
+        populateSelect(
+          readerLanguage,
+          getCenturyOptions(),
+          (century) => century.code,
+          (century) => century.name,
+          "Select century"
+        );
+        readerEdition.innerHTML =
+          '<option value="">Select century first</option>';
+        readerEdition.disabled = true;
+        setReaderMessage("Select a century from I to XX.");
+      } else {
+        setPrimaryReaderLabel("Language");
+        const languages = getLanguagesFromEditions(readerEditions);
 
-      populateSelect(
-        readerLanguage,
-        languages,
-        (language) => language.code,
-        (language) => language.name,
-        "Select language"
-      );
+        populateSelect(
+          readerLanguage,
+          languages,
+          (language) => language.code,
+          (language) => language.name,
+          "Select language"
+        );
 
-      readerEdition.innerHTML =
-        '<option value="">Select language first</option>';
-      readerEdition.disabled = true;
+        readerEdition.innerHTML =
+          '<option value="">Select language first</option>';
+        readerEdition.disabled = true;
 
-      setReaderMessage("Select a language to begin.");
+        setReaderMessage("Select a language to begin.");
+      }
+
       await restoreReaderQueryState();
       return;
     } catch (error) {
@@ -521,7 +660,8 @@ const syncReaderQuery = () => {
   const params = new URLSearchParams(window.location.search);
   const values = {
     readerMode: readerMode?.value,
-    language: readerLanguage?.value,
+    century: readerMode?.value === "century" ? readerLanguage?.value : "",
+    language: readerMode?.value === "century" ? "" : readerLanguage?.value,
     edition: readerEdition?.value,
     book: readerBook?.value,
     chapter: readerChapter?.value,
@@ -599,7 +739,60 @@ const restoreReaderQueryState = async () => {
     setReaderModeState(requestedMode);
   }
 
-  if (requestedMode === "century" || requestedMode === "concordance") return;
+  if (requestedMode === "concordance") return;
+
+  if (requestedMode === "century") {
+    const requestedCentury = initialReaderQuery.get("century");
+    if (
+      requestedCentury &&
+      [...readerLanguage.options].some(
+        (option) => option.value === requestedCentury
+      )
+    ) {
+      readerLanguage.value = requestedCentury;
+      populateEditionsForCentury(requestedCentury);
+
+      const requestedEdition = initialReaderQuery.get("edition");
+      if (
+        requestedEdition &&
+        [...readerEdition.options].some(
+          (option) => option.value === requestedEdition
+        )
+      ) {
+        readerEdition.value = requestedEdition;
+        await loadBooks(requestedEdition);
+
+        const requestedBook = initialReaderQuery.get("book");
+        if (
+          requestedBook &&
+          [...readerBook.options].some(
+            (option) => option.value === requestedBook
+          )
+        ) {
+          readerBook.value = requestedBook;
+          await loadChapters(requestedEdition, requestedBook);
+
+          const requestedChapter = initialReaderQuery.get("chapter");
+          if (
+            requestedChapter &&
+            [...readerChapter.options].some(
+              (option) => option.value === requestedChapter
+            )
+          ) {
+            readerChapter.value = requestedChapter;
+            await loadPassage(
+              requestedEdition,
+              requestedBook,
+              requestedChapter
+            );
+          }
+        }
+      }
+    }
+
+    syncReaderQuery();
+    return;
+  }
 
   const requestedLanguage = initialReaderQuery.get("language");
   if (
@@ -712,7 +905,11 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
     setReaderModeState(readerMode.value);
     syncReaderQuery();
 
-    if (readerMode.value === "reader" || readerMode.value === "base66") {
+    if (
+      readerMode.value === "reader" ||
+      readerMode.value === "base66" ||
+      readerMode.value === "century"
+    ) {
       await loadEditions();
     }
   });
@@ -739,13 +936,26 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
 
     if (!readerLanguage.value) {
       readerEdition.disabled = true;
-      setReaderMessage("Select a language to begin.");
+      setReaderMessage(
+        readerMode?.value === "century"
+          ? "Select a century from I to XX."
+          : "Select a language to begin."
+      );
       syncReaderQuery();
       return;
     }
 
-    populateEditionsForLanguage(readerLanguage.value);
-    setReaderMessage("Select a Bible / Translation.");
+    if (readerMode?.value === "century") {
+      populateEditionsForCentury(readerLanguage.value);
+      setReaderMessage(
+        readerEdition.disabled
+          ? "No published witnesses are available for this century yet."
+          : "Select a Bible / Manuscript / Historical Edition."
+      );
+    } else {
+      populateEditionsForLanguage(readerLanguage.value);
+      setReaderMessage("Select a Bible / Translation.");
+    }
     syncReaderQuery();
   });
 
@@ -786,7 +996,11 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
     syncReaderQuery();
   });
 
-  if (readerMode?.value === "reader" || readerMode?.value === "base66") {
+  if (
+    readerMode?.value === "reader" ||
+    readerMode?.value === "base66" ||
+    readerMode?.value === "century"
+  ) {
     loadEditions();
   }
 }
