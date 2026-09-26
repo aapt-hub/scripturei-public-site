@@ -895,8 +895,16 @@ const restoreReaderQueryState = async () => {
   initialReaderQueryRestored = true;
   const requestedMode = initialReaderQuery.get("readerMode");
   if (readerMode && readerModeDescriptions[requestedMode]) {
+    // Initial mode setup already happened before loadEditions().
+    // Do not call setReaderModeState() here because it resets the
+    // freshly populated century/language options before query restoration.
     readerMode.value = requestedMode;
-    setReaderModeState(requestedMode);
+    setReaderModeMessage(
+      readerModeDescriptions[requestedMode] ?? readerModeDescriptions.reader
+    );
+    setPrimaryReaderLabel(
+      requestedMode === "century" ? "Century" : "Language"
+    );
   }
 
   if (requestedMode === "concordance") return;
