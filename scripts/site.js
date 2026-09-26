@@ -375,6 +375,137 @@ const getVerseLabel = (verse) =>
 
 const getVerseText = (verse) => verse.Text ?? verse.text ?? "";
 
+const scriptureBookAbbreviations = {
+  GEN: "Gen", EXO: "Exod", LEV: "Lev", NUM: "Num", DEU: "Deut",
+  JOS: "Josh", JDG: "Judg", RUT: "Ruth", "1SA": "1 Sam", "2SA": "2 Sam",
+  "1KI": "1 Kgs", "2KI": "2 Kgs", "1CH": "1 Chr", "2CH": "2 Chr",
+  EZR: "Ezra", NEH: "Neh", EST: "Esth", JOB: "Job", PSA: "Ps",
+  PRO: "Prov", ECC: "Eccl", SNG: "Song", ISA: "Isa", JER: "Jer",
+  LAM: "Lam", EZK: "Ezek", DAN: "Dan", HOS: "Hos", JOL: "Joel",
+  AMO: "Amos", OBA: "Obad", JON: "Jonah", MIC: "Mic", NAM: "Nah",
+  HAB: "Hab", ZEP: "Zeph", HAG: "Hag", ZEC: "Zech", MAL: "Mal",
+  MAT: "Matt", MRK: "Mark", LUK: "Luke", JHN: "John", ACT: "Acts",
+  ROM: "Rom", "1CO": "1 Cor", "2CO": "2 Cor", GAL: "Gal", EPH: "Eph",
+  PHP: "Phil", COL: "Col", "1TH": "1 Thess", "2TH": "2 Thess",
+  "1TI": "1 Tim", "2TI": "2 Tim", TIT: "Titus", PHM: "Phlm",
+  HEB: "Heb", JAS: "Jas", "1PE": "1 Pet", "2PE": "2 Pet",
+  "1JN": "1 John", "2JN": "2 John", "3JN": "3 John",
+  JUD: "Jude", REV: "Rev"
+};
+
+const formatAccessedDate = (value) => {
+  if (!value) return "";
+  const date = new Date(`${value}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+};
+
+const getReaderAccessUrl = () => {
+  const params = new URLSearchParams(window.location.search);
+
+  if (readerMode?.value === "century") {
+    params.set("readerMode", "century");
+    if (readerLanguage?.value) params.set("century", readerLanguage.value);
+    else params.delete("century");
+  } else {
+    params.delete("century");
+    if (readerMode?.value && readerMode.value !== "reader") {
+      params.set("readerMode", readerMode.value);
+    } else {
+      params.delete("readerMode");
+    }
+  }
+
+  if (readerEdition?.value) params.set("edition", readerEdition.value);
+  else params.delete("edition");
+
+  params.delete("language");
+  params.delete("book");
+  params.delete("chapter");
+
+  const query = params.toString();
+  return `${window.location.origin}/${query ? `?${query}` : ""}`;
+};
+
+const getVerseRangeFromPassage = () => {
+  const verses = currentPassage?.Verses ?? currentPassage?.verses ?? [];
+  if (!Array.isArray(verses) || verses.length === 0) return "";
+
+  const first = getVerseLabel(verses[0]);
+  const last = getVerseLabel(verses[verses.length - 1]);
+
+  if (!first) return "";
+  if (!last || first === last) return String(first);
+  return `${first}–${last}`;
+};
+
+const formatTurabianWebCitation = () => {
+  if (!currentPassage) return "";
+
+  const rawBook =
+    currentPassage.BookCode ??
+    currentPassage.bookCode ??
+    "";
+
+  const book =
+    scriptureBookAbbreviations[rawBook] ??
+    rawBook;
+
+  const chapter =
+    currentPassage.Chapter ??
+    currentPassage.chapter ??
+    "";
+
+  const verseRange = getVerseRangeFromPassage();
+
+  const editionTitle =
+    currentCitation?.editionTitle ??
+    currentCitation?.EditionTitle ??
+    "";
+
+  const editionAbbreviation =
+    currentCitation?.editionAbbreviation ??
+    currentCitation?.EditionAbbreviation ??
+    "";
+
+  const accessedDate = formatAccessedDate(
+    currentCitation?.accessedDate ??
+    currentCitation?.AccessedDate ??
+    ""
+  );
+
+  const accessUrl = getReaderAccessUrl();
+
+  let version = editionTitle;
+  if (editionAbbreviation) {
+    version = editionTitle
+      ? `${editionTitle} (${editionAbbreviation})`
+      : editionAbbreviation;
+  }
+
+  const reference =
+    book && chapter
+      ? `${book} ${chapter}${verseRange ? `:${verseRange}` : ""}`
+      : "";
+
+  const parts = [reference, version].filter(Boolean);
+
+  if (accessedDate) {
+    parts.push(`accessed ${accessedDate}`);
+  }
+
+  if (accessUrl) {
+    parts.push(accessUrl);
+  }
+
+  return parts.length ? `${parts.join(", ")}.` : "";
+};
+
 const passageAsText = () => {
   if (!currentPassage) return "";
 
@@ -385,38 +516,9 @@ const passageAsText = () => {
     .map((verse) => `${getVerseLabel(verse)} ${getVerseText(verse)}`)
     .join("\n");
 
-  const citation =
-    currentCitation?.passageReference ??
-    currentCitation?.PassageReference ??
-    "";
-
-  const citationDetails = [];
-  const editionTitle =
-    currentCitation?.editionTitle ??
-    currentCitation?.EditionTitle ??
-    "";
-  const publicationYear =
-    currentCitation?.publicationYear ??
-    currentCitation?.PublicationYear ??
-    "";
-  const sourceUrl =
-    currentCitation?.sourceUrl ??
-    currentCitation?.SourceURL ??
-    "";
-  const accessedDate =
-    currentCitation?.accessedDate ??
-    currentCitation?.AccessedDate ??
-    "";
-
-  if (editionTitle) citationDetails.push(`Edition: ${editionTitle}`);
-  if (publicationYear) citationDetails.push(`Publication year: ${publicationYear}`);
-  if (sourceUrl) citationDetails.push(`Source: ${sourceUrl}`);
-  if (accessedDate) citationDetails.push(`Accessed: ${accessedDate}`);
-
+  const citation = formatTurabianWebCitation();
   const citationBlock = citation
-    ? `\nTurabian Citation\n${citation}${
-        citationDetails.length ? `\n${citationDetails.join("\n")}` : ""
-      }\n`
+    ? `\nTurabian Citation\n${citation}\n`
     : "";
 
   return `${heading}\n\n${verses}\n${citationBlock}`;
@@ -694,14 +796,7 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   readerPassage.appendChild(verses);
 
     if (citation) {
-      const citationText =
-        typeof citation === "string"
-          ? citation
-          : citation.passageReference ??
-            citation.PassageReference ??
-            citation.displayAttribution ??
-            citation.DisplayAttribution ??
-            "";
+      const citationText = formatTurabianWebCitation();
 
       if (citationText) {
         const citationParagraph = document.createElement("p");
