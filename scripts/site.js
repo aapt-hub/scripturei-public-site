@@ -169,7 +169,92 @@ const getEditionName = (edition) => {
 const getLanguageCode = (edition) =>
   edition.LanguageCode ?? edition.languageCode ?? getEditionID(edition).split("-")[0] ?? "";
 
-const getLanguageName = (code) => languageNames[code] ?? code.toUpperCase();
+const englishLanguageNames = {
+  arb: "Arabic",
+  asm: "Assamese",
+  ben: "Bengali",
+  ceb: "Cebuano",
+  ces: "Czech",
+  ckb: "Central Kurdish",
+  cmn: "Chinese Mandarin",
+  deu: "German",
+  eng: "English",
+  ewe: "Ewe",
+  fra: "French",
+  gaz: "Oromo",
+  grc: "Greek",
+  guj: "Gujarati",
+  hat: "Haitian Creole",
+  hau: "Hausa",
+  heb: "Hebrew",
+  hbo: "Biblical Hebrew",
+  hin: "Hindi",
+  ibo: "Igbo",
+  ind: "Indonesian",
+  ita: "Italian",
+  jav: "Javanese",
+  kan: "Kannada",
+  kor: "Korean",
+  ilo: "Ilocano",
+  kik: "Kikuyu",
+  lit: "Lithuanian",
+  lug: "Luganda",
+  luo: "Luo",
+  nde: "North Ndebele",
+  nld: "Dutch",
+  nya: "Chichewa",
+  ory: "Odia",
+  rif: "Tarifit",
+  som: "Somali",
+  lin: "Lingala",
+  mal: "Malayalam",
+  mar: "Marathi",
+  mya: "Burmese",
+  npi: "Nepali",
+  orm: "Oromo",
+  pan: "Punjabi",
+  pes: "Persian",
+  por: "Portuguese",
+  ron: "Romanian",
+  rus: "Russian",
+  sna: "Shona",
+  spa: "Spanish",
+  srp: "Serbian",
+  swh: "Swahili",
+  tam: "Tamil",
+  tdx: "Tandroy",
+  tel: "Telugu",
+  tgl: "Tagalog",
+  uig: "Uyghur",
+  urd: "Urdu",
+  vie: "Vietnamese",
+  yor: "Yoruba",
+
+  amh: "Amharic",
+  plt: "Malagasy",
+  twi: "Akan / Twi",
+};
+
+Object.assign(languageNames, {
+  amh: "አማርኛ",
+  plt: "Malagasy",
+  twi: "Twi",
+});
+
+const getLanguageName = (code) => {
+  const nativeName = languageNames[code];
+  const englishName = englishLanguageNames[code];
+
+  if (nativeName && englishName) {
+    if (nativeName.localeCompare(englishName, undefined, { sensitivity: "base" }) === 0) {
+      return nativeName;
+    }
+
+    return `${nativeName} (${englishName})`;
+  }
+
+  return nativeName ?? englishName ?? code.toUpperCase();
+};
 
 const romanCenturies = [
   ["I", 1, "1–100 CE"],
