@@ -139,7 +139,7 @@ assert.ok(
 );
 
 assert.ok(
-  js.includes('const readerAvailable = mode === "reader" || mode === "base66";') &&
+  js.includes("base66EditionIDs") &&
     js.includes('readerMode?.value === "base66"') &&
     [
       "grcbyz-ebible",
