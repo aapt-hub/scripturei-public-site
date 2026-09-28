@@ -224,7 +224,7 @@ const englishLanguageNames = {
   sw: "Swahili",
   swh: "Swahili",
   tam: "Tamil",
-  tdx: "Tandroy",
+  tdx: "Tandroy-Mahafaly Malagasy",
   tel: "Telugu",
   tgl: "Tagalog",
   uig: "Uyghur",
