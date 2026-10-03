@@ -134,7 +134,7 @@ for (const endpoint of [
 
 
 assert.ok(
-  js.includes('base66: "Base66 reference editions (six-source projection)."'),
+  js.includes('base66: "Base66 governed editions and reference sources."'),
   "Base66 mode description is missing"
 );
 
@@ -142,6 +142,9 @@ assert.ok(
   js.includes("base66EditionIDs") &&
     js.includes('readerMode?.value === "base66"') &&
     [
+      "deu-deu1912",
+      "eng-eng-asv",
+      "hat-hatbsa",
       "grcbyz-ebible",
       "grclxx-ebible",
       "grcmt-ebible",
@@ -149,7 +152,7 @@ assert.ok(
       "grctr-ebible",
       "hebwlc-ebible",
     ].every((editionID) => js.includes(editionID)),
-  "Base66 mode must use the bounded six-source Reader data path"
+  "Base66 mode must use the governed Base66 Reader data path"
 );
 
 assert.equal(

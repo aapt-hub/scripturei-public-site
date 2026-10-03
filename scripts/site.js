@@ -26,13 +26,16 @@ const readerModeMessage = document.querySelector("#reader-mode-message");
 
 const readerModeDescriptions = {
   reader: "",
-  base66: "Base66 reference editions (six-source projection).",
+  base66: "Base66 governed editions and reference sources.",
   century: "Browse published Scripture witnesses by century (I–XX).",
   concordance:
     "Concordance is pending a governed STRATEGi contract and validated API.",
 };
 
 const base66EditionIDs = new Set([
+  "deu-deu1912",
+  "eng-eng-asv",
+  "hat-hatbsa",
   "grcbyz-ebible",
   "grclxx-ebible",
   "grcmt-ebible",
