@@ -465,6 +465,17 @@ const getVerseLabel = (verse) =>
 
 const getVerseText = (verse) => verse.Text ?? verse.text ?? "";
 
+const getVerseOriginalText = (verse) =>
+  verse.OriginalText ?? verse.originalText ?? "";
+
+const getVerseLexical = (verse) => {
+  const lexical = verse.Lexical ?? verse.lexical ?? [];
+  return Array.isArray(lexical) ? lexical : [];
+};
+
+const getLexicalStrong = (token) =>
+  token.Strong ?? token.strong ?? "";
+
 const scriptureBookAbbreviations = {
   GEN: "Gen", EXO: "Exod", LEV: "Lev", NUM: "Num", DEU: "Deut",
   JOS: "Josh", JDG: "Judg", RUT: "Ruth", "1SA": "1 Sam", "2SA": "2 Sam",
@@ -843,12 +854,20 @@ const loadPassage = async (editionID, bookCode, chapter) => {
 
   setReaderMessage("Loading Scripture…");
 
+  const layeredBase66 = readerMode?.value === "base66";
+
+  const passageQuery = new URLSearchParams({
+    edition: editionID,
+    book: bookCode,
+    chapter: String(chapter),
+  });
+
+  if (layeredBase66) {
+    passageQuery.set("layered", "base66");
+  }
+
   const response = await fetch(
-    `${readerApiPrefix()}/reader/passage?edition=${encodeURIComponent(
-      editionID
-    )}&book=${encodeURIComponent(
-      bookCode
-    )}&chapter=${encodeURIComponent(chapter)}`
+    `${readerApiPrefix()}/reader/passage?${passageQuery.toString()}`
   );
 
   if (!response.ok) {
@@ -871,16 +890,45 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   verses.className = "reader-verses";
 
     for (const verse of versesPayload) {
-    const paragraph = document.createElement("p");
-    const number = document.createElement("sup");
+    const verseBlock = document.createElement("div");
+    verseBlock.className = "reader-base66-verse";
 
+    const translationLine = document.createElement("p");
+    translationLine.className = "reader-base66-translation";
+
+    const number = document.createElement("sup");
     number.textContent = getVerseLabel(verse);
 
-    paragraph.appendChild(number);
-    paragraph.append(" ");
-    paragraph.append(getVerseText(verse));
+    translationLine.appendChild(number);
+    translationLine.append(" ");
+    translationLine.append(getVerseText(verse));
 
-    verses.appendChild(paragraph);
+    verseBlock.appendChild(translationLine);
+
+    if (layeredBase66) {
+      const originalText = getVerseOriginalText(verse).trim();
+
+      if (originalText) {
+        const originalLine = document.createElement("p");
+        originalLine.className = "reader-base66-original";
+        originalLine.dir = "auto";
+        originalLine.textContent = originalText;
+        verseBlock.appendChild(originalLine);
+      }
+
+      const strongValues = getVerseLexical(verse)
+        .map(getLexicalStrong)
+        .filter(Boolean);
+
+      if (strongValues.length) {
+        const strongLine = document.createElement("p");
+        strongLine.className = "reader-base66-strong";
+        strongLine.textContent = `Strong: ${strongValues.join(" · ")}`;
+        verseBlock.appendChild(strongLine);
+      }
+    }
+
+    verses.appendChild(verseBlock);
   }
 
   readerPassage.appendChild(verses);

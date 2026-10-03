@@ -155,6 +155,17 @@ assert.ok(
   "Base66 mode must use the governed Base66 Reader data path"
 );
 
+assert.ok(
+  js.includes('passageQuery.set("layered", "base66")') &&
+    js.includes("OriginalText") &&
+    js.includes("Lexical") &&
+    js.includes("reader-base66-translation") &&
+    js.includes("reader-base66-original") &&
+    js.includes("reader-base66-strong") &&
+    js.includes("Strong:"),
+  "Base66 Reader must render translation, original-language, and Strong layers"
+);
+
 assert.equal(
   worker.includes("/v1/base66"),
   false,
