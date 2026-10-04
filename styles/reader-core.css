@@ -516,3 +516,36 @@
     width: 100%;
   }
 }
+
+
+/* SCRIPTUREi GDiciple-family visual alignment R1 */
+.inline-reader {
+  border-color: rgba(147,115,31,.46);
+  border-radius: .55rem;
+  background: linear-gradient(145deg, #1C2430, #151B24);
+  box-shadow: 0 22px 58px rgba(28,36,48,.16);
+}
+.reader-mode label,
+.reader-navigation label { color: #D8C487; }
+.reader-mode select,
+.reader-navigation select {
+  border-radius: .35rem;
+  border-color: rgba(199,169,85,.62);
+  background: rgba(241,239,230,.07);
+}
+.reader-text {
+  border-radius: .4rem;
+  background: rgba(8,12,18,.3);
+}
+.reader-text h3,
+.reader-passage h4,
+.reader-verses sup { color: #C7A955; }
+.reader-passage h4 { background: #1C2430; }
+.reader-tools button { border-radius: .3rem; }
+.reader-base66-original { color: #E7E2D2 !important; }
+.reader-base66-strong {
+  color: #D8C487 !important;
+  font-family: ui-monospace, "IBM Plex Mono", monospace !important;
+  font-size: calc(.82rem * var(--reader-font-scale)) !important;
+  letter-spacing: .02em;
+}
