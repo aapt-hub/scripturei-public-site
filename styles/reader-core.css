@@ -516,3 +516,65 @@
     width: 100%;
   }
 }
+
+/* =====================================================================
+   BASE66_LANGUAGE_EDITION_PASSAGE_MENU_R1
+   Presentation-only query layer over the existing reader controls.
+   ===================================================================== */
+
+.reader-base66-query {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.reader-base66-query[hidden],
+.reader-legacy-navigation[hidden] {
+  display: none !important;
+}
+
+.reader-base66-query label {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.reader-base66-query input {
+  width: 100%;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+}
+
+.reader-base66-query button {
+  min-height: 2.75rem;
+}
+
+.reader-base66-query-help {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.reader-base66-target {
+  outline: 2px solid currentColor;
+  outline-offset: 0.35rem;
+  border-radius: 0.25rem;
+}
+
+@media (max-width: 640px) {
+  .reader-base66-query {
+    grid-template-columns: 1fr;
+  }
+
+  .reader-base66-query button {
+    width: 100%;
+  }
+}

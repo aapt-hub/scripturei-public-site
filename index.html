@@ -4,16 +4,28 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="SCRIPTUREi makes the Word of God freely accessible for every nation, tribe, people, and language.">
-    <meta name="theme-color" content="#07182d">
+    <meta name="theme-color" content="#1C2430">
     <title>SCRIPTUREi — Bibles for the World</title>
     <link rel="preload" href="assets/background.webp" as="image" type="image/webp">
     <link rel="stylesheet" href="styles/site.css">
     <link rel="stylesheet" href="styles/reader-core.css">
     <script src="scripts/site.js" defer></script>
   </head>
-  <body>
+  <body class="scripturei-gdisciple-family-r2">
     <div class="page-background" aria-hidden="true"></div>
     <a class="skip-link" href="#main">Skip to content</a>
+
+    <!-- SCRIPTUREI_GDISCIPLE_VISUAL_FAMILY_R2 -->
+    <div class="scripturei-ecosystem-bar">
+      <div class="scripturei-family-wrap scripturei-ecosystem-bar-inner">
+        <p class="scripturei-ecosystem-label">PROMiXi Ecosystem</p>
+        <nav class="scripturei-ecosystem-links" aria-label="PROMiXi ecosystem">
+          <a href="https://gdisciple.org/">GDisciple</a>
+          <a href="https://promixi.org/">PROMiXi</a>
+          <a href="https://scripturei.org/" aria-current="site">SCRIPTUREi</a>
+        </nav>
+      </div>
+    </div>
 
     <header class="site-header">
       <nav class="nav-wrap" aria-label="Primary navigation">
@@ -27,11 +39,11 @@
         </button>
         <ul class="nav-links" id="primary-links">
           <li><a href="#bible">Bible</a></li>
+          <li><a href="#bible-index">Languages</a></li>
           <li><a href="#purpose">Vision &amp; Mission</a></li>
-          <li><a href="#stewardship">Stewardship</a></li>
+          <li><a href="#privacy">Privacy</a></li>
           <li><a href="#contact">Contact</a></li>
-                <li><a lang="ur" dir="rtl" href="/?edition=urdoucv" data-edition-id="urdoucv">اردو — کتابِ مقدّس — Biblica® آزادانہ اردو ہم عصر ترجمہ</a></li>
-</ul>
+        </ul>
       </nav>
     </header>
 
@@ -87,19 +99,37 @@
                     </select>
                   </label>
 
-            <label>
+            <label class="reader-legacy-navigation">
               Book
               <select id="reader-book" data-reader-book disabled>
                 <option value="">Select edition first</option>
               </select>
             </label>
 
-            <label>
+            <label class="reader-legacy-navigation">
               Chapter
               <select id="reader-chapter" data-reader-chapter disabled>
                 <option value="">Select book first</option>
               </select>
             </label>
+
+            <div class="reader-base66-query" data-base66-query hidden>
+              <label for="reader-base66-reference">
+                Passage
+                <input
+                  id="reader-base66-reference"
+                  type="text"
+                  inputmode="text"
+                  autocomplete="off"
+                  placeholder="John 3:16"
+                  aria-describedby="reader-base66-query-help"
+                >
+              </label>
+              <button id="reader-base66-read" type="button" disabled>Read</button>
+              <p id="reader-base66-query-help" class="reader-base66-query-help">
+                Enter a book, chapter, or verse reference.
+              </p>
+            </div>
           </nav>
 
           <article class="reader-text" aria-live="polite">
@@ -127,9 +157,36 @@
           <p class="eyebrow">Bible languages</p>
           <h2 id="bible-index-title">Bibles by language</h2>
         </div>
+
+        <div class="bible-index-toolbar"
+             data-scripturei-bible-search
+             role="search"
+             aria-label="Search published Bibles">
+          <label for="bible-search">Find a Bible or language</label>
+          <div class="bible-search-row">
+            <input
+              id="bible-search"
+              type="search"
+              inputmode="search"
+              autocomplete="off"
+              placeholder="Search language, Bible, translation, or ISO code"
+              aria-describedby="bible-search-status">
+            <button
+              type="button"
+              class="bible-search-clear"
+              data-bible-search-clear>
+              Clear
+            </button>
+          </div>
+          <p
+            id="bible-search-status"
+            class="bible-search-status"
+            data-bible-search-status
+            aria-live="polite"></p>
+        </div>
         <!-- SCRIPTUREI_NATIVE_BIBLE_INDEX_BEGIN -->
 <section id="world-bibles" data-scripturei-world-bibles>
-  <h2>World Bibles</h2>
+  <h3 class="world-bibles-title">Published Bible editions</h3>
   <ul>
     <li><a href="/?edition=arb-arbnav" data-edition-id="arb-arbnav">arb — Ketab El Hayat Majani/كتاب الحياة مجانى</a></li>
     <li><a href="/?edition=asm-asmfb" data-edition-id="asm-asmfb">asm — ইণ্ডিয়ান ৰিভাইচ ভাৰচন (IRV) আচামিচ - 2019</a></li>
@@ -188,6 +245,7 @@
     <li><a href="/?edition=telotsa" data-edition-id="telotsa">tel — Biblica® ఉచిత తెలుగు సమకాలీన అనువాదం</a></li>
     <li><a href="/?edition=tglulb" data-edition-id="tglulb">tgl — banal na Bibliya</a></li>
     <li><a href="/?edition=uig-uigara" data-edition-id="uig-uigara">uig — مۇقېددېس كالام (يەنگى يېزىق)</a></li>
+    <li><a lang="ur" dir="rtl" href="/?edition=urdoucv" data-edition-id="urdoucv">اردو — کتابِ مقدّس — Biblica® آزادانہ اردو ہم عصر ترجمہ</a></li>
     <li><a href="/?edition=vieovcb" data-edition-id="vieovcb">vie — Biblica® Thiên Ban Kinh Thánh Hiện Đại™</a></li>
     <li><a href="/?edition=yor-yor" data-edition-id="yor-yor">yor — Biblica® ní oore ọ̀fẹ́ láti lo Bíbélì Mímọ́ ní Èdè Yorùbá Òde-Òní</a></li>
   
@@ -255,7 +313,7 @@
       </section>
 
       <section class="section promises-section" aria-label="Privacy and stewardship">
-        <article class="privacy-card">
+        <article class="privacy-card" id="privacy">
           <div>
             <p class="eyebrow">Privacy Promise</p>
             <h2>Read freely.<br><span>Leave privately.</span></h2>
@@ -303,6 +361,12 @@
     <footer class="site-footer">
       <p><strong>SCRIPTUREi</strong> <span aria-hidden="true">·</span> Bibles for the world</p>
       <p>Operated and stewarded by PROMiXi LLC</p>
+      <nav class="scripturei-footer-links"
+           aria-label="PROMiXi ecosystem footer links">
+        <a href="https://gdisciple.org/">GDisciple</a>
+        <a href="https://promixi.org/">PROMiXi</a>
+        <a href="https://scripturei.org/" aria-current="site">SCRIPTUREi</a>
+      </nav>
     </footer>
 <a lang="ar" dir="rtl" href="/?edition=arb-vd" data-edition-id="arb-vd">العربية — الكتاب المقدس — فان دايك</a> | <a href="/world-bible/arb/arb-vd/">World Bible</a><br>
   </body>

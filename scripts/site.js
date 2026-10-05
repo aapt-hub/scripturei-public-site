@@ -58,6 +58,25 @@ const setReaderModeState = (mode) => {
 
   setReaderModeMessage(description);
 
+  const base66QueryMode = mode === "base66";
+
+  if (readerBase66Query) {
+    readerBase66Query.hidden = !base66QueryMode;
+  }
+
+  for (const control of readerLegacyNavigation) {
+    control.hidden = base66QueryMode;
+  }
+
+  if (readerBase66Reference && !base66QueryMode) {
+    readerBase66Reference.value = "";
+  }
+
+  if (readerBase66Read) {
+    readerBase66Read.disabled =
+      !base66QueryMode || !readerEdition?.value || !readerBase66Reference?.value.trim();
+  }
+
   for (const control of [
     readerLanguage,
     readerEdition,
@@ -82,6 +101,10 @@ const readerLanguage = document.querySelector("#reader-language");
 const readerEdition = document.querySelector("#reader-edition");
 const readerBook = document.querySelector("#reader-book");
 const readerChapter = document.querySelector("#reader-chapter");
+const readerBase66Query = document.querySelector("[data-base66-query]");
+const readerBase66Reference = document.querySelector("#reader-base66-reference");
+const readerBase66Read = document.querySelector("#reader-base66-read");
+const readerLegacyNavigation = [...document.querySelectorAll(".reader-legacy-navigation")];
 const readerMessage = document.querySelector("#reader-message");
 const readerPassage = document.querySelector("#reader-passage");
 const readerFontDecrease = document.querySelector("[data-reader-font-decrease]");
@@ -847,6 +870,124 @@ const loadChapters = async (editionID, bookCode) => {
   setReaderMessage("Select a chapter.");
 };
 
+const normalizeBase66BookQuery = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLocaleLowerCase()
+    .replace(/[.\s_-]+/g, " ");
+
+const parseBase66Reference = (value) => {
+  const raw = String(value ?? "").trim();
+  if (!raw) return null;
+
+  const match = raw.match(/^(.+?)(?:\s+(\d+)(?::(\d+))?)?$/u);
+  if (!match) return null;
+
+  const book = match[1]?.trim() ?? "";
+  const chapter = match[2] ? Number(match[2]) : null;
+  const verse = match[3] ? Number(match[3]) : null;
+
+  if (!book) return null;
+  if (chapter !== null && (!Number.isInteger(chapter) || chapter < 1)) return null;
+  if (verse !== null && (!Number.isInteger(verse) || verse < 1)) return null;
+
+  return { book, chapter, verse };
+};
+
+const resolveBase66BookOption = (query) => {
+  const wanted = normalizeBase66BookQuery(query);
+
+  return [...readerBook.options].find((option) => {
+    if (!option.value) return false;
+
+    return (
+      normalizeBase66BookQuery(option.value) === wanted ||
+      normalizeBase66BookQuery(option.textContent) === wanted
+    );
+  }) ?? null;
+};
+
+const focusBase66Verse = (verseNumber) => {
+  if (!verseNumber || !readerPassage) return false;
+
+  const verseBlocks = [...readerPassage.querySelectorAll(".reader-base66-verse")];
+
+  for (const block of verseBlocks) {
+    const label = block.querySelector("sup");
+    if (String(label?.textContent ?? "").trim() !== String(verseNumber)) continue;
+
+    block.classList.add("reader-base66-target");
+    block.scrollIntoView({ behavior: "smooth", block: "center" });
+    return true;
+  }
+
+  return false;
+};
+
+const runBase66ReferenceQuery = async () => {
+  if (readerMode?.value !== "base66") return;
+  if (!readerEdition?.value) {
+    setReaderMessage("Select a Bible / Translation first.");
+    return;
+  }
+
+  const parsed = parseBase66Reference(readerBase66Reference?.value);
+  if (!parsed) {
+    setReaderMessage("Enter a passage such as John 3:16.");
+    return;
+  }
+
+  await loadBooks(readerEdition.value);
+
+  const bookOption = resolveBase66BookOption(parsed.book);
+  if (!bookOption) {
+    setReaderMessage(`Book not found: ${parsed.book}`);
+    return;
+  }
+
+  readerBook.value = bookOption.value;
+
+  if (parsed.chapter === null) {
+    await loadChapters(readerEdition.value, readerBook.value);
+    setReaderMessage("Select or enter a chapter.");
+    syncReaderQuery();
+    return;
+  }
+
+  await loadChapters(readerEdition.value, readerBook.value);
+
+  const chapterValue = String(parsed.chapter);
+  const chapterExists = [...readerChapter.options].some(
+    (option) => option.value === chapterValue
+  );
+
+  if (!chapterExists) {
+    setReaderMessage(`Chapter not found: ${parsed.chapter}`);
+    return;
+  }
+
+  readerChapter.value = chapterValue;
+
+  await loadPassage(
+    readerEdition.value,
+    readerBook.value,
+    readerChapter.value
+  );
+
+  const params = new URLSearchParams(window.location.search);
+  if (parsed.verse !== null) params.set("verse", String(parsed.verse));
+  else params.delete("verse");
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}?${params.toString()}`
+  );
+
+  if (parsed.verse !== null && !focusBase66Verse(parsed.verse)) {
+    setReaderMessage(`Verse ${parsed.verse} was not found in this chapter.`);
+  }
+};
+
 const loadPassage = async (editionID, bookCode, chapter) => {
   clearPassage();
 
@@ -1271,11 +1412,36 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
   readerEdition.addEventListener("change", async () => {
     try {
       await loadBooks(readerEdition.value);
+      if (readerBase66Read) {
+        readerBase66Read.disabled =
+          readerMode?.value !== "base66" ||
+          !readerEdition.value ||
+          !readerBase66Reference?.value.trim();
+      }
     } catch (error) {
       setReaderMessage("Unable to load books.");
       console.error(error);
     }
     syncReaderQuery();
+  });
+
+  readerBase66Reference?.addEventListener("input", () => {
+    if (readerBase66Read) {
+      readerBase66Read.disabled =
+        readerMode?.value !== "base66" ||
+        !readerEdition?.value ||
+        !readerBase66Reference.value.trim();
+    }
+  });
+
+  readerBase66Reference?.addEventListener("keydown", async (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    await runBase66ReferenceQuery();
+  });
+
+  readerBase66Read?.addEventListener("click", async () => {
+    await runBase66ReferenceQuery();
   });
 
   readerBook.addEventListener("change", async () => {
@@ -1312,4 +1478,73 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
   ) {
     loadEditions();
   }
+}
+
+/* =====================================================================
+   SCRIPTUREI_BIBLE_INDEX_FILTER_R1
+   Presentation-only filtering over statically materialized Bible links.
+   ===================================================================== */
+
+const bibleIndexSearch = document.querySelector("#bible-search");
+const bibleIndexClear = document.querySelector("[data-bible-search-clear]");
+const bibleIndexStatus = document.querySelector("[data-bible-search-status]");
+const bibleIndexItems = [
+  ...document.querySelectorAll(
+    "[data-scripturei-world-bibles] li"
+  ),
+];
+
+const normalizeBibleIndexText = (value) =>
+  String(value ?? "")
+    .normalize("NFKD")
+    .toLocaleLowerCase()
+    .trim();
+
+const updateBibleIndexFilter = () => {
+  if (!bibleIndexSearch) return;
+
+  const query = normalizeBibleIndexText(bibleIndexSearch.value);
+  let visible = 0;
+
+  for (const item of bibleIndexItems) {
+    const link = item.querySelector("a[data-edition-id]");
+    const searchable = normalizeBibleIndexText(
+      [
+        item.textContent,
+        link?.dataset.editionId,
+        link?.getAttribute("lang"),
+      ]
+        .filter(Boolean)
+        .join(" ")
+    );
+
+    const matches = !query || searchable.includes(query);
+
+    item.hidden = !matches;
+
+    if (matches) visible += 1;
+  }
+
+  if (bibleIndexStatus) {
+    bibleIndexStatus.textContent = query
+      ? `${visible} of ${bibleIndexItems.length} published editions shown.`
+      : `${bibleIndexItems.length} published editions.`;
+  }
+};
+
+if (bibleIndexSearch) {
+  bibleIndexSearch.addEventListener(
+    "input",
+    updateBibleIndexFilter
+  );
+
+  updateBibleIndexFilter();
+}
+
+if (bibleIndexClear && bibleIndexSearch) {
+  bibleIndexClear.addEventListener("click", () => {
+    bibleIndexSearch.value = "";
+    updateBibleIndexFilter();
+    bibleIndexSearch.focus();
+  });
 }

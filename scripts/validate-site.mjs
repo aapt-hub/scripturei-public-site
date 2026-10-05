@@ -229,15 +229,94 @@ assert.ok(
   "Security headers are missing Referrer-Policy"
 );
 
-const absoluteUrls =
-  (html + css + readerCss + js).match(/https?:\/\/[^\s"'`<>]+/gi) ?? [];
+/*
+ * Runtime/client network references remain fail-closed.
+ * Production Reader traffic remains same-origin.
+ * Only the two existing localhost Reader development bindings
+ * remain permitted.
+ */
+const runtimeAbsoluteUrls =
+  (css + readerCss + js).match(/https?:\/\/[^\s"'`<>]+/gi) ?? [];
 
-for (const url of absoluteUrls) {
+for (const url of runtimeAbsoluteUrls) {
   assert.ok(
     url.startsWith("http://127.0.0.1:8777") ||
       url.startsWith("http://127.0.0.1:8666"),
-    `Unapproved external network reference detected: ${url}`
+    `Unapproved runtime network reference detected: ${url}`
   );
+}
+
+/*
+ * Absolute URLs in HTML are navigation links, not Reader/runtime
+ * dependencies. Permit only the three exact PROMiXi ecosystem roots.
+ */
+const approvedHtmlNavigationUrls = new Set([
+  "https://gdisciple.org/",
+  "https://promixi.org/",
+  "https://scripturei.org/",
+]);
+
+const htmlAbsoluteUrls =
+  html.match(/https?:\/\/[^\s"'`<>]+/gi) ?? [];
+
+for (const url of htmlAbsoluteUrls) {
+  assert.ok(
+    approvedHtmlNavigationUrls.has(url),
+    `Unapproved HTML navigation reference detected: ${url}`
+  );
+}
+
+if (!html.includes('href="#bible-index"')) {
+  throw new Error("Primary navigation must expose the Languages index");
+}
+
+if (!html.includes('id="bible-search"')) {
+  throw new Error("Bible language search input is missing");
+}
+
+if (!html.includes("data-bible-search-status")) {
+  throw new Error("Bible search status binding is missing");
+}
+
+if (!css.includes("SCRIPTUREI_TEMPLATE_CANDIDATE_R1")) {
+  throw new Error("Template candidate CSS binding is missing");
+}
+
+if (!js.includes("SCRIPTUREI_BIBLE_INDEX_FILTER_R1")) {
+  throw new Error("Bible index filter implementation is missing");
+}
+
+if (!html.includes("data-scripturei-world-bibles")) {
+  throw new Error("Static World Bibles materialization is missing");
+}
+
+
+if (!html.includes('class="scripturei-gdisciple-family-r2"')) {
+  throw new Error("GDisciple visual-family body binding is missing");
+}
+
+if (!html.includes('class="scripturei-ecosystem-bar"')) {
+  throw new Error("PROMiXi ecosystem bar is missing");
+}
+
+if (!html.includes('aria-current="site">SCRIPTUREi</a>')) {
+  throw new Error("SCRIPTUREi ecosystem current-site binding is missing");
+}
+
+if (!css.includes("SCRIPTUREI_GDISCIPLE_VISUAL_FAMILY_R2")) {
+  throw new Error("GDisciple visual-family CSS binding is missing");
+}
+
+for (const forbidden of [
+  "The AI-Powered Management Console for the Local Church",
+  "Track 1 Agentic Intelligence",
+  "The Private Operational Suite",
+]) {
+  if (html.includes(forbidden)) {
+    throw new Error(
+      `GDisciple product content must not be copied into SCRIPTUREi: ${forbidden}`
+    );
+  }
 }
 
 console.log("STRUCTURAL_MATERIALIZATION_CHECK=PASS");
