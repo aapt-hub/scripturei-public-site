@@ -65,6 +65,68 @@
         <p class="hero-promise">Read freely. <span>Leave privately.</span></p>
       </section>
 
+      <!-- SCRIPTUREI_PUBLISHED_BIBLE_SHOWCASE_R1 -->
+      <section
+        class="published-bible-showcase"
+        data-published-bible-showcase
+        aria-labelledby="published-bible-showcase-title">
+
+        <div class="published-bible-showcase-heading">
+          <p class="eyebrow">Bibles for the World</p>
+          <h2 id="published-bible-showcase-title">
+            Scripture in the languages of the nations
+          </h2>
+        </div>
+
+        <div class="published-bible-stage" aria-live="polite">
+          <p
+            class="published-bible-language"
+            data-published-bible-language>
+            Published Bible
+          </p>
+
+          <p
+            class="published-bible-term"
+            data-published-bible-term>
+            Bible
+          </p>
+
+          <p
+            class="published-bible-edition"
+            data-published-bible-edition>
+            Loading published editions…
+          </p>
+
+          <a
+            class="published-bible-read"
+            data-published-bible-read
+            href="#bible">
+            Read this Bible →
+          </a>
+        </div>
+
+        <div
+          class="published-bible-controls"
+          aria-label="Published Bible showcase controls">
+
+          <button
+            type="button"
+            data-published-bible-prev
+            aria-label="Previous published Bible">‹</button>
+
+          <button
+            type="button"
+            data-published-bible-pause
+            aria-label="Pause published Bible rotation"
+            aria-pressed="false">Pause</button>
+
+          <button
+            type="button"
+            data-published-bible-next
+            aria-label="Next published Bible">›</button>
+        </div>
+      </section>
+
       <section class="section bible-section" id="bible" aria-labelledby="bible-title">
         <div class="section-heading reader-heading">
           <p class="eyebrow">Reader V1 Limited</p>
@@ -73,11 +135,39 @@
         </div>
 
                 <section class="inline-reader" aria-label="Bible Reader">
-          <div class="reader-mode" aria-label="Reader view">
+          <div class="reader-peaceful-bar">
+            <button
+              type="button"
+              class="reader-site-menu-trigger"
+              data-reader-site-menu
+              aria-label="Open SCRIPTUREi site navigation"
+              aria-expanded="false">☰ <span>SCRIPTUREi</span></button>
+
+            <div class="reader-context-switch" aria-label="Bible context">
+              <button
+                type="button"
+                class="reader-context-trigger reader-context-trigger--base66"
+                data-reader-base66-toggle
+                aria-controls="reader-base66-panel"
+                aria-expanded="false">Base66 ◀</button>
+
+              <strong class="reader-context-center" data-reader-context-title>BIBLE</strong>
+
+              <button
+                type="button"
+                class="reader-context-trigger reader-context-trigger--exbase66"
+                data-reader-exbase66-toggle
+                aria-controls="reader-exbase66-panel"
+                aria-expanded="false">▶ EXBase66</button>
+            </div>
+          </div>
+
+          <div class="reader-mode reader-mode--compat" aria-hidden="true">
             <label for="reader-mode">View</label>
-            <select id="reader-mode">
+            <select id="reader-mode" tabindex="-1">
               <option value="reader">Reader</option>
               <option value="base66">By Base66</option>
+              <option value="exbase66">By EXBase66</option>
               <option value="century">By Century</option>
               <option value="concordance">By Concordance</option>
             </select>
@@ -113,6 +203,26 @@
               </select>
             </label>
 
+            <div class="reader-exbase66-query" data-exbase66-query hidden>
+              <label for="reader-exbase66-passage-id">
+                Query / Passage ID
+                <input
+                  id="reader-exbase66-passage-id"
+                  type="number"
+                  inputmode="numeric"
+                  min="1"
+                  step="1"
+                  autocomplete="off"
+                  placeholder="77211"
+                  aria-describedby="reader-exbase66-query-help"
+                >
+              </label>
+              <button id="reader-exbase66-search" type="button" disabled>Search</button>
+              <p id="reader-exbase66-query-help" class="reader-exbase66-query-help">
+                Enter an EXBase66 passage ID. Results include governed passage metadata and available relations.
+              </p>
+            </div>
+
             <div class="reader-base66-query" data-base66-query hidden>
               <label for="reader-base66-reference">
                 Passage
@@ -132,7 +242,21 @@
             </div>
           </nav>
 
-          <article class="reader-text" aria-live="polite">
+          <div class="reader-three-zone">
+            <aside
+              id="reader-base66-panel"
+              class="reader-context-panel reader-context-panel--base66"
+              data-reader-base66-panel
+              aria-label="Base66 context"
+              hidden>
+              <div class="reader-context-panel-heading">
+                <strong>Base66</strong>
+                <button type="button" data-reader-context-close aria-label="Close Base66">×</button>
+              </div>
+              <p>Bible-grounded passage layers and governed reference context.</p>
+            </aside>
+
+            <article class="reader-text" aria-live="polite">
             <h3 data-reader-edition-name>Read Scripture</h3>
 
             <div id="reader-message" class="reader-message" role="status">
@@ -140,7 +264,21 @@
             </div>
 
             <div id="reader-passage" class="reader-passage" aria-live="polite"></div>
-          </article>
+            </article>
+
+            <aside
+              id="reader-exbase66-panel"
+              class="reader-context-panel reader-context-panel--exbase66"
+              data-reader-exbase66-panel
+              aria-label="EXBase66 context"
+              hidden>
+              <div class="reader-context-panel-heading">
+                <strong>EXBase66</strong>
+                <button type="button" data-reader-context-close aria-label="Close EXBase66">×</button>
+              </div>
+              <p>Governed relationships, evidence, provenance, and read-only exploration.</p>
+            </aside>
+          </div>
 
           <footer class="reader-tools" aria-label="Reader tools">
             <button type="button" data-reader-font-decrease disabled aria-label="Decrease Scripture text size">A−</button>
@@ -187,7 +325,10 @@
         <!-- SCRIPTUREI_NATIVE_BIBLE_INDEX_BEGIN -->
 <section id="world-bibles" data-scripturei-world-bibles>
   <h3 class="world-bibles-title">Published Bible editions</h3>
-  <ul>
+  <details class="bible-index-disclosure" id="bible-index-disclosure" data-bible-index-disclosure>
+    <summary>Explore all 66 published Bibles</summary>
+    <p class="bible-index-disclosure-note">Published editions available in the Reader now.</p>
+    <ul>
     <li><a href="/?edition=arb-arbnav" data-edition-id="arb-arbnav">arb — Ketab El Hayat Majani/كتاب الحياة مجانى</a></li>
     <li><a href="/?edition=asm-asmfb" data-edition-id="asm-asmfb">asm — ইণ্ডিয়ান ৰিভাইচ ভাৰচন (IRV) আচামিচ - 2019</a></li>
     <li><a href="/?edition=ben-benirv" data-edition-id="ben-benirv">ben — ইন্ডিয়ান রিভাইজড ভার্সন (IRV) - বেঙ্গলী</a></li>
@@ -252,33 +393,12 @@
     <li><a lang="am" dir="ltr" href="/?edition=door43-Door43-Catalog-am_ulb" data-edition-id="door43-Door43-Catalog-am_ulb">አማርኛ — መጽሐፍ ቅዱስ — መጽሐፍ ቅዱስ</a></li>
     <li><a lang="tw" dir="ltr" href="/?edition=door43-lversaw-twiONA20" data-edition-id="door43-lversaw-twiONA20">Twi — Twerɛ Kronkron — Twerɛ Kronkron</a></li>
     <li><a lang="mg" dir="ltr" href="/?edition=door43-Door43-Catalog-plt_ulb" data-edition-id="door43-Door43-Catalog-plt_ulb">Malagasy — Baiboly — Baiboly</a></li>
-      <li><a lang="ko" dir="ltr" href="/?edition=kor" data-edition-id="kor">한국어 — 성경 — 한국어 성경</a></li>
-  </ul>
+    <li><a lang="ko" dir="ltr" href="/?edition=kor" data-edition-id="kor">한국어 — 성경 — 한국어 성경</a></li>
+    <li><a lang="sw" dir="ltr" href="/?edition=door43-Door43-Catalog-sw_ulb" data-edition-id="door43-Door43-Catalog-sw_ulb">Kiswahili — Biblia — Biblia Takatifu</a></li>
+    <li><a lang="ar" dir="rtl" href="/?edition=arb-vd" data-edition-id="arb-vd">العربية — الكتاب المقدس — فان دايك</a></li>
+    </ul>
+  </details>
 </section>
-<li>
-  <a lang="sw"
-     dir="ltr"
-     href="/?edition=door43-Door43-Catalog-sw_ulb"
-     data-edition-id="door43-Door43-Catalog-sw_ulb">Kiswahili — Biblia — Biblia Takatifu</a>
-  |
-  <a href="/world-bible/sw/door43-Door43-Catalog-sw_ulb/">World Bible</a>
-</li>
-<li>
-  <a lang="am"
-     dir="ltr"
-     href="/?edition=door43-Door43-Catalog-am_ulb"
-     data-edition-id="door43-Door43-Catalog-am_ulb">አማርኛ — መጽሐፍ — መጽሐፍ ቅዱስ</a>
-  |
-  <a href="/world-bible/am/door43-Door43-Catalog-am_ulb/">World Bible</a>
-</li>
-<li>
-  <a lang="tw"
-     dir="ltr"
-     href="/?edition=door43-lversaw-twiONA20"
-     data-edition-id="door43-lversaw-twiONA20">Twi — Bible — Twerɛ Kronkron</a>
-  |
-  <a href="/world-bible/tw/door43-lversaw-twiONA20/">World Bible</a>
-</li>
 <!-- SCRIPTUREI_NATIVE_BIBLE_INDEX_END -->
 
       </section>
@@ -343,6 +463,88 @@
         </article>
       </section>
 
+      <section class="section glance-section" id="glance" aria-labelledby="glance-title" data-scripturei-glance>
+        <div class="section-heading compact-heading">
+          <p class="eyebrow">Coverage Snapshot</p>
+          <h2 id="glance-title">SCRIPTUREi at a Glance</h2>
+          <p class="lead">A restrained, sourced view of published Scripture coverage. Every number is derived from governed local data or marked pending where no governed source exists.</p>
+        </div>
+
+        <div class="glance-grid">
+          <article class="glance-card" data-glance-metric="languages-published">
+            <span class="glance-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9S14.5 18.3 12 21c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg>
+            </span>
+            <span class="glance-value" data-glance-value>—</span>
+            <p class="glance-label">Languages Published</p>
+            <p class="glance-source">Source: unique language identities across published editions</p>
+          </article>
+
+          <article class="glance-card" data-glance-metric="bibles-published">
+            <span class="glance-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 5.5v15M8 7h8"/></svg>
+            </span>
+            <span class="glance-value" data-glance-value>—</span>
+            <p class="glance-label">Bibles Published</p>
+            <p class="glance-source">Source: unique published edition IDs</p>
+          </article>
+
+          <article class="glance-card" data-glance-metric="base66-published">
+            <span class="glance-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 7.5 12 12l9-4.5z"/><path d="M3 12.5 12 17l9-4.5M3 16.5 12 21l9-4.5"/></svg>
+            </span>
+            <span class="glance-value" data-glance-value>—</span>
+            <p class="glance-label">Bibles in Base66</p>
+            <p class="glance-source">Source: Base66 governed IDs also published</p>
+          </article>
+
+          <article class="glance-card" data-glance-metric="ready-ingestion">
+            <span class="glance-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h5l1.5 2.5h5L16 12h5"/><path d="M4.5 5.5h15l1.5 6.5v5.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5v-5.5z"/></svg>
+            </span>
+            <span class="glance-value" data-glance-value>—</span>
+            <p class="glance-label">Ready for Ingestion</p>
+            <p class="glance-source">Awaiting governed telemetry source</p>
+          </article>
+
+          <article class="glance-card" data-glance-metric="in-validation">
+            <span class="glance-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></svg>
+            </span>
+            <span class="glance-value" data-glance-value>—</span>
+            <p class="glance-label">In Validation</p>
+            <p class="glance-source">Awaiting governed telemetry source</p>
+          </article>
+
+          <article class="glance-card" data-glance-metric="catalog-editions">
+            <span class="glance-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+            </span>
+            <span class="glance-value" data-glance-value>—</span>
+            <p class="glance-label">Catalog Editions</p>
+            <p class="glance-source">Awaiting governed telemetry source</p>
+          </article>
+
+          <article class="glance-card" data-glance-metric="catalog-languages">
+            <span class="glance-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h9M8.5 5v2c0 4-2 7-4.5 9M6 10c1.2 2.6 3.1 4.6 5.5 6"/><path d="m12.5 20 3.5-9 3.5 9M14 17h4"/></svg>
+            </span>
+            <span class="glance-value" data-glance-value>—</span>
+            <p class="glance-label">Languages in Catalog</p>
+            <p class="glance-source">Awaiting governed telemetry source</p>
+          </article>
+
+          <article class="glance-card" data-glance-metric="discovery">
+            <span class="glance-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.2 5.3-5.3 2.2 2.2-5.3z"/></svg>
+            </span>
+            <span class="glance-value" data-glance-value>—</span>
+            <p class="glance-label">Discovery</p>
+            <p class="glance-source">Source: 9 discovery forces + 1 separate plane</p>
+          </article>
+        </div>
+      </section>
+
       <section class="contact-section" id="contact" aria-labelledby="contact-title">
         <div class="section contact-inner">
           <div>
@@ -350,9 +552,9 @@
             <h2 id="contact-title">Walk with us.</h2>
             <p class="lead">For information about SCRIPTUREi and its mission to make the Bible freely accessible, contact PROMiXi LLC.</p>
           </div>
-          <a class="contact-link" href="mailto:apauneto@gmail.com">
+          <a class="contact-link" href="mailto:support@promixi.org">
             <span>Email PROMiXi LLC</span>
-            <strong>apauneto@gmail.com</strong>
+            <strong>support@promixi.org</strong>
           </a>
         </div>
       </section>
@@ -368,6 +570,5 @@
         <a href="https://scripturei.org/" aria-current="site">SCRIPTUREi</a>
       </nav>
     </footer>
-<a lang="ar" dir="rtl" href="/?edition=arb-vd" data-edition-id="arb-vd">العربية — الكتاب المقدس — فان دايك</a> | <a href="/world-bible/arb/arb-vd/">World Bible</a><br>
   </body>
 </html>

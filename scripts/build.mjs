@@ -34,5 +34,5 @@ const review = html
   .replace('<script src="scripts/site.js" defer></script>', "")
   .replace("</body>", `<script>\n${js}\n</script>\n</body>`);
 
-await writeFile(resolve(projectRoot, "SCRIPTUREi-public-site-local-review-R2.html"), review, "utf8");
-console.log("Built dist/ and single-file local review R2");
+await writeFile(resolve(projectRoot, "SCRIPTUREi-public-site-local-review-R4.html"), review, "utf8");
+console.log("Built dist/ and single-file local review R4");

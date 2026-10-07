@@ -641,7 +641,63 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
   margin-bottom: 1rem;
 }
 
-#world-bibles > ul {
+/* ---------------------------------------------------------------------
+   SCRIPTUREI_BIBLE_INDEX_DISCLOSURE_R1
+   Compact native disclosure for the published-Bible index.
+   --------------------------------------------------------------------- */
+
+.bible-index-disclosure {
+  margin-top: 0.35rem;
+}
+
+.bible-index-disclosure > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 1.05rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(4, 18, 37, 0.58);
+  color: var(--gold-200);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  list-style: none;
+}
+
+.bible-index-disclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.bible-index-disclosure > summary::before {
+  content: "▸";
+  color: var(--gold-300);
+  font-size: 0.8rem;
+}
+
+.bible-index-disclosure[open] > summary::before {
+  content: "▾";
+}
+
+.bible-index-disclosure > summary:hover,
+.bible-index-disclosure > summary:focus-visible {
+  background: var(--gold-300);
+  color: var(--night-950);
+}
+
+.bible-index-disclosure-note {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.bible-index-disclosure[open] > .bible-index-disclosure-note {
+  margin-bottom: 1rem;
+}
+
+#world-bibles .bible-index-disclosure > ul {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
   gap: 0.85rem;
@@ -650,7 +706,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
   list-style: none;
 }
 
-#world-bibles > ul > li {
+#world-bibles .bible-index-disclosure > ul > li {
   display: flex;
   min-height: 4.75rem;
   align-items: stretch;
@@ -660,11 +716,11 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
   overflow: hidden;
 }
 
-#world-bibles > ul > li[hidden] {
+#world-bibles .bible-index-disclosure > ul > li[hidden] {
   display: none;
 }
 
-#world-bibles > ul > li > a[data-edition-id] {
+#world-bibles .bible-index-disclosure > ul > li > a[data-edition-id] {
   display: flex;
   width: 100%;
   align-items: center;
@@ -674,7 +730,7 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
   overflow-wrap: anywhere;
 }
 
-#world-bibles > ul > li > a[data-edition-id]:focus-visible {
+#world-bibles .bible-index-disclosure > ul > li > a[data-edition-id]:focus-visible {
   outline: 3px solid currentColor;
   outline-offset: -3px;
 }
@@ -1073,13 +1129,13 @@ body.scripturei-gdisciple-family-r2 .reader-message {
   color: var(--si-soft);
 }
 
-.scripturei-gdisciple-family-r2 #world-bibles > ul {
+.scripturei-gdisciple-family-r2 #world-bibles .bible-index-disclosure > ul {
   gap: 1px;
   border: 1px solid var(--si-line);
   background: var(--si-line);
 }
 
-.scripturei-gdisciple-family-r2 #world-bibles > ul > li {
+.scripturei-gdisciple-family-r2 #world-bibles .bible-index-disclosure > ul > li {
   min-height: 5.25rem;
   border: 0;
   border-radius: 0;
@@ -1087,10 +1143,34 @@ body.scripturei-gdisciple-family-r2 .reader-message {
 }
 
 .scripturei-gdisciple-family-r2
-#world-bibles > ul > li > a[data-edition-id] {
+#world-bibles .bible-index-disclosure > ul > li > a[data-edition-id] {
   padding: 1rem 1.1rem;
   color: var(--si-ink);
   font-family: Georgia, "Times New Roman", serif;
+}
+
+.scripturei-gdisciple-family-r2 .bible-index-disclosure > summary {
+  min-height: 0;
+  border: 1px solid var(--si-line);
+  border-radius: 0;
+  background: var(--si-paper-2);
+  color: var(--si-wine);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.95rem;
+}
+
+.scripturei-gdisciple-family-r2 .bible-index-disclosure > summary::before {
+  color: var(--si-brass);
+}
+
+.scripturei-gdisciple-family-r2 .bible-index-disclosure > summary:hover,
+.scripturei-gdisciple-family-r2 .bible-index-disclosure > summary:focus-visible {
+  background: var(--si-wine);
+  color: #fff;
+}
+
+.scripturei-gdisciple-family-r2 .bible-index-disclosure-note {
+  color: var(--si-soft);
 }
 
 /* ---------------------------------------------------------------------
@@ -1240,5 +1320,196 @@ body.scripturei-gdisciple-family-r2 .reader-message {
 @media (prefers-reduced-motion: reduce) {
   .scripturei-gdisciple-family-r2 {
     scroll-behavior: auto;
+  }
+}
+
+/* =====================================================================
+   SCRIPTUREi PUBLISHED BIBLE SHOWCASE R1
+   Published editions only. Source-language presentation.
+   ===================================================================== */
+
+.published-bible-showcase {
+  width: min(calc(100% - 56px), var(--si-wrap));
+  margin: 1.4rem auto 0;
+  padding: 1.2rem 1.4rem;
+  border: 1px solid var(--si-line);
+  background: rgba(241, 239, 230, 0.9);
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.published-bible-showcase-heading {
+  max-width: 44rem;
+  margin: 0 auto 0.7rem;
+}
+
+.published-bible-showcase-heading h2 {
+  margin: 0.15rem 0 0;
+  color: var(--si-ink);
+  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+  font-weight: 700;
+}
+
+.published-bible-stage {
+  min-height: 8.2rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 0.18rem;
+  transition: opacity 450ms ease;
+}
+
+.published-bible-stage.is-changing {
+  opacity: 0;
+}
+
+.published-bible-language,
+.published-bible-term,
+.published-bible-edition {
+  margin: 0;
+}
+
+.published-bible-language {
+  color: var(--si-wine);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.published-bible-term {
+  color: var(--si-ink);
+  font-size: clamp(1.5rem, 3vw, 2.15rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.published-bible-edition {
+  max-width: 42rem;
+  color: var(--si-ink-soft);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.published-bible-read {
+  margin-top: 0.35rem;
+  color: var(--si-wine);
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.published-bible-read:hover,
+.published-bible-read:focus-visible {
+  text-decoration: underline;
+}
+
+.published-bible-controls {
+  display: flex;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.published-bible-controls button {
+  min-width: 2.15rem;
+  min-height: 2rem;
+  border: 1px solid var(--si-line);
+  background: transparent;
+  color: var(--si-wine);
+  padding: 0.2rem 0.55rem;
+  font: 700 0.75rem/1 Georgia, "Times New Roman", serif;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .published-bible-stage {
+    transition: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .published-bible-showcase {
+    width: min(calc(100% - 28px), var(--si-wrap));
+    padding: 1rem;
+  }
+
+  .published-bible-stage {
+    min-height: 9rem;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   SCRIPTUREI_AT_A_GLANCE_R1
+   Sourced coverage snapshot. Values are populated at runtime from
+   governed local data; unanswered metrics read "Pending governed sync".
+   --------------------------------------------------------------------- */
+
+.glance-section {
+  border-top: 1px solid var(--si-line);
+}
+
+.glance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1px;
+  margin-top: 2.25rem;
+  border: 1px solid var(--si-line);
+  background: var(--si-line);
+}
+
+.glance-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-height: 11rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--si-paper);
+  color: var(--si-ink);
+  padding: 1.4rem 1.35rem;
+  box-shadow: none;
+}
+
+.glance-icon {
+  display: inline-flex;
+  color: var(--si-brass);
+}
+
+.glance-icon svg {
+  display: block;
+}
+
+.glance-value {
+  color: var(--si-wine);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 2.6vw, 2.3rem);
+  font-weight: 600;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.glance-card[data-state="pending"] .glance-value {
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.glance-label {
+  margin: 0;
+  color: var(--si-ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.glance-source {
+  margin: auto 0 0;
+  color: var(--si-soft);
+  font: 700 0.68rem/1.4 ui-monospace, Consolas, monospace;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 700px) {
+  .glance-card {
+    min-height: 0;
   }
 }

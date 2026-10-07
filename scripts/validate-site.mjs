@@ -90,7 +90,7 @@ for (const required of [
   'id="reader-passage"',
   "Vision",
   "Mission",
-  "apauneto@gmail.com",
+  "support@promixi.org",
   "PROMiXi LLC",
 ]) {
   assert.ok(
@@ -100,7 +100,7 @@ for (const required of [
 }
 
 assert.ok(
-  html.includes('href="mailto:apauneto@gmail.com"'),
+  html.includes('href="mailto:support@promixi.org"'),
   "Contact must use the approved mailto link"
 );
 

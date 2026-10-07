@@ -27,6 +27,7 @@ const readerModeMessage = document.querySelector("#reader-mode-message");
 const readerModeDescriptions = {
   reader: "",
   base66: "Base66 governed editions and reference sources.",
+  exbase66: "EXBase66 governed passage metadata and validated relationships.",
   century: "Browse published Scripture witnesses by century (I–XX).",
   concordance:
     "Concordance is pending a governed STRATEGi contract and validated API.",
@@ -55,17 +56,39 @@ const setReaderModeState = (mode) => {
   const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
   const readerAvailable =
     mode === "reader" || mode === "base66" || mode === "century";
+  const exbase66Mode = mode === "exbase66";
 
   setReaderModeMessage(description);
 
   const base66QueryMode = mode === "base66";
+
+  if (readerExbase66Query) {
+    readerExbase66Query.hidden = !exbase66Mode;
+  }
+
+  if (readerExbase66PassageID && !exbase66Mode) {
+    readerExbase66PassageID.value = "";
+  }
+
+  if (readerExbase66Search) {
+    readerExbase66Search.disabled =
+      !exbase66Mode || !readerExbase66PassageID?.value.trim();
+  }
 
   if (readerBase66Query) {
     readerBase66Query.hidden = !base66QueryMode;
   }
 
   for (const control of readerLegacyNavigation) {
-    control.hidden = base66QueryMode;
+    control.hidden = base66QueryMode || exbase66Mode;
+  }
+
+  if (readerLanguage?.closest("label")) {
+    readerLanguage.closest("label").hidden = exbase66Mode;
+  }
+
+  if (readerEdition?.closest("label")) {
+    readerEdition.closest("label").hidden = exbase66Mode;
   }
 
   if (readerBase66Reference && !base66QueryMode) {
@@ -104,6 +127,9 @@ const readerChapter = document.querySelector("#reader-chapter");
 const readerBase66Query = document.querySelector("[data-base66-query]");
 const readerBase66Reference = document.querySelector("#reader-base66-reference");
 const readerBase66Read = document.querySelector("#reader-base66-read");
+const readerExbase66Query = document.querySelector("[data-exbase66-query]");
+const readerExbase66PassageID = document.querySelector("#reader-exbase66-passage-id");
+const readerExbase66Search = document.querySelector("#reader-exbase66-search");
 const readerLegacyNavigation = [...document.querySelectorAll(".reader-legacy-navigation")];
 const readerMessage = document.querySelector("#reader-message");
 const readerPassage = document.querySelector("#reader-passage");
@@ -1093,6 +1119,138 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   setReaderMessage("");
 };
 
+const runExbase66Query = async () => {
+  if (readerMode?.value !== "exbase66") return;
+
+  const passageID = readerExbase66PassageID?.value.trim() ?? "";
+
+  if (!/^\d+$/.test(passageID) || Number(passageID) < 1) {
+    setReaderMessage("Enter a valid EXBase66 passage ID.");
+    return;
+  }
+
+  if (!readerPassage) return;
+
+  setReaderMessage("Loading EXBase66 passage and relations...");
+  readerPassage.replaceChildren();
+  setReaderToolsEnabled(false);
+
+  try {
+    const [passageResponse, relationsResponse] = await Promise.all([
+      fetch(`/v1/exbase66/passage/${encodeURIComponent(passageID)}`),
+      fetch(`/v1/exbase66/relations/${encodeURIComponent(passageID)}`),
+    ]);
+
+    if (!passageResponse.ok) {
+      throw new Error(`Passage request failed (${passageResponse.status})`);
+    }
+
+    if (!relationsResponse.ok) {
+      throw new Error(`Relations request failed (${relationsResponse.status})`);
+    }
+
+    const passage = await passageResponse.json();
+    const relations = await relationsResponse.json();
+
+    const heading = document.createElement("h4");
+    heading.textContent =
+      passage.canonical_passage_key || `EXBase66 passage ${passageID}`;
+    readerPassage.appendChild(heading);
+
+    const metadata = document.createElement("dl");
+    metadata.className = "reader-exbase66-metadata";
+
+    const fields = [
+      ["Passage ID", passage.passage_id],
+      ["Canonical key", passage.canonical_passage_key],
+      ["Book", passage.book_code],
+      ["Chapter", passage.chapter],
+      ["Graph node", passage.graph_node_id],
+    ];
+
+    for (const [label, value] of fields) {
+      if (value === null || value === undefined || value === "") continue;
+
+      const term = document.createElement("dt");
+      term.textContent = label;
+
+      const description = document.createElement("dd");
+      description.textContent = String(value);
+
+      metadata.append(term, description);
+    }
+
+    readerPassage.appendChild(metadata);
+
+    const relationsHeading = document.createElement("h4");
+    relationsHeading.textContent = "Relations";
+    readerPassage.appendChild(relationsHeading);
+
+    if (!Array.isArray(relations) || relations.length === 0) {
+      const empty = document.createElement("p");
+      empty.textContent = "No passage-keyed EXBase66 relations are available for this passage.";
+      readerPassage.appendChild(empty);
+    } else {
+      const list = document.createElement("ul");
+      list.className = "reader-exbase66-relations";
+
+      for (const relation of relations) {
+        const item = document.createElement("li");
+
+        const title = document.createElement("strong");
+        title.textContent = relation.relation_type || "Relation";
+        item.appendChild(title);
+
+        const details = [
+          relation.from_passage_id != null
+            ? `from ${relation.from_passage_id}`
+            : "",
+          relation.to_passage_id != null
+            ? `to ${relation.to_passage_id}`
+            : "",
+          relation.source_id ? `source ${relation.source_id}` : "",
+          relation.source_ref ? `ref ${relation.source_ref}` : "",
+          relation.evidence_ref ? `evidence ${relation.evidence_ref}` : "",
+        ].filter(Boolean);
+
+        if (details.length) {
+          item.appendChild(document.createTextNode(` — ${details.join(" · ")}`));
+        }
+
+        list.appendChild(item);
+      }
+
+      readerPassage.appendChild(list);
+    }
+
+    setReaderMessage("");
+  } catch (error) {
+    console.error("EXBase66 query failed:", error);
+    setReaderMessage(
+      "EXBase66 results are temporarily unavailable. No result was fabricated."
+    );
+  }
+};
+
+readerExbase66PassageID?.addEventListener("input", () => {
+  if (!readerExbase66Search) return;
+
+  readerExbase66Search.disabled =
+    readerMode?.value !== "exbase66" ||
+    !readerExbase66PassageID.value.trim();
+});
+
+readerExbase66PassageID?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    void runExbase66Query();
+  }
+});
+
+readerExbase66Search?.addEventListener("click", () => {
+  void runExbase66Query();
+});
+
 const syncReaderQuery = () => {
   const params = new URLSearchParams(window.location.search);
   const values = {
@@ -1488,6 +1646,9 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
 const bibleIndexSearch = document.querySelector("#bible-search");
 const bibleIndexClear = document.querySelector("[data-bible-search-clear]");
 const bibleIndexStatus = document.querySelector("[data-bible-search-status]");
+const bibleIndexDisclosure = document.querySelector(
+  "[data-bible-index-disclosure]"
+);
 const bibleIndexItems = [
   ...document.querySelectorAll(
     "[data-scripturei-world-bibles] li"
@@ -1505,6 +1666,11 @@ const updateBibleIndexFilter = () => {
 
   const query = normalizeBibleIndexText(bibleIndexSearch.value);
   let visible = 0;
+
+  // A non-empty query reveals matches, so open the disclosure automatically.
+  if (query && bibleIndexDisclosure) {
+    bibleIndexDisclosure.open = true;
+  }
 
   for (const item of bibleIndexItems) {
     const link = item.querySelector("a[data-edition-id]");
@@ -1548,3 +1714,376 @@ if (bibleIndexClear && bibleIndexSearch) {
     bibleIndexSearch.focus();
   });
 }
+
+/* =====================================================================
+   SCRIPTUREi Three-Zone Peaceful Reader R1
+   Drives existing Reader/Base66/EXBase66 state through #reader-mode.
+   ===================================================================== */
+
+const readerBase66Toggle = document.querySelector("[data-reader-base66-toggle]");
+const readerExbase66Toggle = document.querySelector("[data-reader-exbase66-toggle]");
+const readerBase66Panel = document.querySelector("[data-reader-base66-panel]");
+const readerExbase66Panel = document.querySelector("[data-reader-exbase66-panel]");
+const readerContextTitle = document.querySelector("[data-reader-context-title]");
+const readerContextCloseButtons = document.querySelectorAll("[data-reader-context-close]");
+
+const setReaderContextPanel = async (context) => {
+  const next =
+    context === "base66"
+      ? "base66"
+      : context === "exbase66"
+        ? "exbase66"
+        : "reader";
+
+  if (readerBase66Panel) readerBase66Panel.hidden = next !== "base66";
+  if (readerExbase66Panel) readerExbase66Panel.hidden = next !== "exbase66";
+
+  readerBase66Toggle?.setAttribute(
+    "aria-expanded",
+    String(next === "base66")
+  );
+
+  readerExbase66Toggle?.setAttribute(
+    "aria-expanded",
+    String(next === "exbase66")
+  );
+
+  if (readerContextTitle) {
+    readerContextTitle.textContent =
+      next === "base66"
+        ? "BIBLE + BASE66"
+        : next === "exbase66"
+          ? "BIBLE + EXBASE66"
+          : "BIBLE";
+  }
+
+  if (!readerMode || readerMode.value === next) return;
+
+  readerMode.value = next;
+  readerMode.dispatchEvent(new Event("change", { bubbles: true }));
+};
+
+readerBase66Toggle?.addEventListener("click", () => {
+  void setReaderContextPanel(
+    readerBase66Panel?.hidden === false ? "reader" : "base66"
+  );
+});
+
+readerExbase66Toggle?.addEventListener("click", () => {
+  void setReaderContextPanel(
+    readerExbase66Panel?.hidden === false ? "reader" : "exbase66"
+  );
+});
+
+readerContextCloseButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    void setReaderContextPanel("reader");
+  });
+});
+
+const syncThreeZoneFromReaderMode = () => {
+  const mode = readerMode?.value ?? "reader";
+
+  if (readerBase66Panel) readerBase66Panel.hidden = mode !== "base66";
+  if (readerExbase66Panel) readerExbase66Panel.hidden = mode !== "exbase66";
+
+  readerBase66Toggle?.setAttribute(
+    "aria-expanded",
+    String(mode === "base66")
+  );
+
+  readerExbase66Toggle?.setAttribute(
+    "aria-expanded",
+    String(mode === "exbase66")
+  );
+
+  if (readerContextTitle) {
+    readerContextTitle.textContent =
+      mode === "base66"
+        ? "BIBLE + BASE66"
+        : mode === "exbase66"
+          ? "BIBLE + EXBASE66"
+          : "BIBLE";
+  }
+};
+
+readerMode?.addEventListener("change", syncThreeZoneFromReaderMode);
+syncThreeZoneFromReaderMode();
+
+/* =====================================================================
+   SCRIPTUREi PUBLISHED BIBLE SHOWCASE R1
+   Source: statically materialized published-edition index.
+   ===================================================================== */
+
+const publishedBibleShowcase =
+  document.querySelector("[data-published-bible-showcase]");
+
+if (publishedBibleShowcase) {
+  const sourceLinks = [
+    ...document.querySelectorAll(
+      "[data-scripturei-world-bibles] a[data-edition-id]"
+    ),
+  ];
+
+  const seenEditionIDs = new Set();
+
+  const publishedBibles = sourceLinks
+    .map((link) => {
+      const editionId = link.dataset.editionId?.trim() ?? "";
+      const label = link.textContent?.trim() ?? "";
+      const lang = link.getAttribute("lang") ?? "";
+      const dir = link.getAttribute("dir") ?? "";
+
+      if (!editionId || !label || seenEditionIDs.has(editionId)) {
+        return null;
+      }
+
+      seenEditionIDs.add(editionId);
+
+      const parts = label
+        .split(/\s+—\s+/u)
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+      return {
+        editionId,
+        href: link.getAttribute("href") || `/?edition=${encodeURIComponent(editionId)}`,
+        lang,
+        dir,
+        language: parts.length >= 2 ? parts[0] : "",
+        bibleTerm: parts.length >= 3 ? parts[1] : "",
+        editionTitle:
+          parts.length >= 3
+            ? parts.slice(2).join(" — ")
+            : label,
+        originalLabel: label,
+      };
+    })
+    .filter(Boolean);
+
+  const stage =
+    publishedBibleShowcase.querySelector(".published-bible-stage");
+
+  const languageNode =
+    publishedBibleShowcase.querySelector("[data-published-bible-language]");
+
+  const bibleTermNode =
+    publishedBibleShowcase.querySelector("[data-published-bible-term]");
+
+  const editionNode =
+    publishedBibleShowcase.querySelector("[data-published-bible-edition]");
+
+  const readLink =
+    publishedBibleShowcase.querySelector("[data-published-bible-read]");
+
+  const previousButton =
+    publishedBibleShowcase.querySelector("[data-published-bible-prev]");
+
+  const nextButton =
+    publishedBibleShowcase.querySelector("[data-published-bible-next]");
+
+  const pauseButton =
+    publishedBibleShowcase.querySelector("[data-published-bible-pause]");
+
+  const reduceMotion =
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let publishedBibleIndex = 0;
+  let publishedBibleTimer = null;
+  let publishedBiblePaused = reduceMotion;
+
+  const renderPublishedBible = (index) => {
+    if (!publishedBibles.length) return;
+
+    publishedBibleIndex =
+      (index + publishedBibles.length) % publishedBibles.length;
+
+    const bible = publishedBibles[publishedBibleIndex];
+
+    if (languageNode) {
+      languageNode.textContent =
+        bible.language || bible.lang || "Published Bible";
+    }
+
+    if (bibleTermNode) {
+      bibleTermNode.textContent =
+        bible.bibleTerm || bible.editionTitle;
+    }
+
+    if (editionNode) {
+      editionNode.textContent = bible.editionTitle;
+    }
+
+    for (const node of [languageNode, bibleTermNode, editionNode]) {
+      if (!node) continue;
+
+      if (bible.lang) {
+        node.setAttribute("lang", bible.lang);
+      } else {
+        node.removeAttribute("lang");
+      }
+
+      if (bible.dir) {
+        node.setAttribute("dir", bible.dir);
+      } else {
+        node.removeAttribute("dir");
+      }
+    }
+
+    if (readLink) {
+      readLink.href = bible.href;
+      readLink.dataset.editionId = bible.editionId;
+      readLink.setAttribute(
+        "aria-label",
+        `Read ${bible.originalLabel}`
+      );
+    }
+  };
+
+  const changePublishedBible = (delta) => {
+    if (!stage) {
+      renderPublishedBible(publishedBibleIndex + delta);
+      return;
+    }
+
+    stage.classList.add("is-changing");
+
+    window.setTimeout(() => {
+      renderPublishedBible(publishedBibleIndex + delta);
+      stage.classList.remove("is-changing");
+    }, reduceMotion ? 0 : 450);
+  };
+
+  const stopPublishedBibleRotation = () => {
+    if (publishedBibleTimer !== null) {
+      window.clearInterval(publishedBibleTimer);
+      publishedBibleTimer = null;
+    }
+  };
+
+  const startPublishedBibleRotation = () => {
+    stopPublishedBibleRotation();
+
+    if (publishedBiblePaused || publishedBibles.length < 2) return;
+
+    publishedBibleTimer = window.setInterval(() => {
+      changePublishedBible(1);
+    }, 3000);
+  };
+
+  previousButton?.addEventListener("click", () => {
+    changePublishedBible(-1);
+    startPublishedBibleRotation();
+  });
+
+  nextButton?.addEventListener("click", () => {
+    changePublishedBible(1);
+    startPublishedBibleRotation();
+  });
+
+  pauseButton?.addEventListener("click", () => {
+    publishedBiblePaused = !publishedBiblePaused;
+
+    pauseButton.setAttribute(
+      "aria-pressed",
+      String(publishedBiblePaused)
+    );
+
+    pauseButton.textContent =
+      publishedBiblePaused ? "Resume" : "Pause";
+
+    if (publishedBiblePaused) {
+      stopPublishedBibleRotation();
+    } else {
+      startPublishedBibleRotation();
+    }
+  });
+
+  if (pauseButton && publishedBiblePaused) {
+    pauseButton.setAttribute("aria-pressed", "true");
+    pauseButton.textContent = "Resume";
+  }
+
+  renderPublishedBible(0);
+  startPublishedBibleRotation();
+}
+
+/* =====================================================================
+   SCRIPTUREI_AT_A_GLANCE_R1
+   Runtime-derived coverage snapshot. Every number is computed from the
+   governed local published-Bible index (or the Base66 governed set);
+   metrics with no governed local source are labelled "Pending governed
+   sync" rather than fabricated.
+   ===================================================================== */
+
+const setGlanceMetric = (metric, value, { pending = false } = {}) => {
+  const node = document.querySelector(
+    `[data-scripturei-glance] [data-glance-metric="${metric}"]`
+  );
+  const valueNode = node?.querySelector("[data-glance-value]");
+  if (!valueNode) return;
+
+  valueNode.textContent = String(value);
+  node.dataset.state = pending ? "pending" : "resolved";
+};
+
+const renderScriptureiGlance = () => {
+  const glance = document.querySelector("[data-scripturei-glance]");
+  if (!glance) return;
+
+  const publishedLinks = [
+    ...glance.ownerDocument.querySelectorAll(
+      "[data-scripturei-world-bibles] a[data-edition-id]"
+    ),
+  ];
+
+  const editionIds = new Set();
+  const languageIdentities = new Set();
+
+  for (const link of publishedLinks) {
+    const editionId = link.dataset.editionId?.trim() ?? "";
+    if (editionId) editionIds.add(editionId);
+
+    // Language identity rule: prefer the link's lang attribute; otherwise
+    // the leading label segment before " — " (e.g. "Kiswahili"); otherwise
+    // a leading 3-letter edition-ID prefix before the first "-" (e.g.
+    // "arb" in "arb-vd"). Identities that cannot be established are
+    // skipped; the count is over whatever is determinable across the list.
+    let identity = link.getAttribute("lang")?.trim() ?? "";
+
+    if (!identity) {
+      const label = link.textContent?.trim() ?? "";
+      identity = label.split(/\s+—\s+/u)[0]?.trim() ?? "";
+    }
+
+    if (!identity) {
+      const prefix = editionId.split("-")[0] ?? "";
+      if (/^[a-z]{3}$/iu.test(prefix)) identity = prefix;
+    }
+
+    if (identity) languageIdentities.add(identity.toLocaleLowerCase());
+  }
+
+  setGlanceMetric("languages-published", languageIdentities.size);
+  setGlanceMetric("bibles-published", editionIds.size);
+
+  const base66Published = [...base66EditionIDs].filter((id) =>
+    editionIds.has(id)
+  ).length;
+  setGlanceMetric("base66-published", base66Published);
+
+  for (const metric of [
+    "ready-ingestion",
+    "in-validation",
+    "catalog-editions",
+    "catalog-languages",
+  ]) {
+    setGlanceMetric(metric, "Pending governed sync", { pending: true });
+  }
+
+  // Architecturally specified: 9 discovery forces plus YouVersion as a
+  // separate discovery plane.
+  setGlanceMetric("discovery", "9 + 1");
+};
+
+renderScriptureiGlance();
