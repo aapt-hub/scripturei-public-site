@@ -142,34 +142,15 @@
               data-reader-site-menu
               aria-label="Open SCRIPTUREi site navigation"
               aria-expanded="false">☰ <span>SCRIPTUREi</span></button>
-
-            <div class="reader-context-switch" aria-label="Bible context">
-              <button
-                type="button"
-                class="reader-context-trigger reader-context-trigger--base66"
-                data-reader-base66-toggle
-                aria-controls="reader-base66-panel"
-                aria-expanded="false">Base66 ◀</button>
-
-              <strong class="reader-context-center" data-reader-context-title>BIBLE</strong>
-
-              <button
-                type="button"
-                class="reader-context-trigger reader-context-trigger--exbase66"
-                data-reader-exbase66-toggle
-                aria-controls="reader-exbase66-panel"
-                aria-expanded="false">▶ EXBase66</button>
-            </div>
           </div>
 
-          <div class="reader-mode reader-mode--compat" aria-hidden="true">
+          <div class="reader-mode">
             <label for="reader-mode">View</label>
-            <select id="reader-mode" tabindex="-1">
+            <select id="reader-mode">
               <option value="reader">Reader</option>
-              <option value="base66">By Base66</option>
-              <option value="exbase66">By EXBase66</option>
-              <option value="century">By Century</option>
-              <option value="concordance">By Concordance</option>
+              <option value="century">Century</option>
+              <option value="base66">Base66</option>
+              <option value="exbase66">EXBase66</option>
             </select>
             <p id="reader-mode-message" class="reader-mode-message" role="status"></p>
           </div>
@@ -202,44 +183,6 @@
                 <option value="">Select book first</option>
               </select>
             </label>
-
-            <div class="reader-exbase66-query" data-exbase66-query hidden>
-              <label for="reader-exbase66-passage-id">
-                Query / Passage ID
-                <input
-                  id="reader-exbase66-passage-id"
-                  type="number"
-                  inputmode="numeric"
-                  min="1"
-                  step="1"
-                  autocomplete="off"
-                  placeholder="77211"
-                  aria-describedby="reader-exbase66-query-help"
-                >
-              </label>
-              <button id="reader-exbase66-search" type="button" disabled>Search</button>
-              <p id="reader-exbase66-query-help" class="reader-exbase66-query-help">
-                Enter an EXBase66 passage ID. Results include governed passage metadata and available relations.
-              </p>
-            </div>
-
-            <div class="reader-base66-query" data-base66-query hidden>
-              <label for="reader-base66-reference">
-                Passage
-                <input
-                  id="reader-base66-reference"
-                  type="text"
-                  inputmode="text"
-                  autocomplete="off"
-                  placeholder="John 3:16"
-                  aria-describedby="reader-base66-query-help"
-                >
-              </label>
-              <button id="reader-base66-read" type="button" disabled>Read</button>
-              <p id="reader-base66-query-help" class="reader-base66-query-help">
-                Enter a book, chapter, or verse reference.
-              </p>
-            </div>
           </nav>
 
           <div class="reader-three-zone">
@@ -251,7 +194,6 @@
               hidden>
               <div class="reader-context-panel-heading">
                 <strong>Base66</strong>
-                <button type="button" data-reader-context-close aria-label="Close Base66">×</button>
               </div>
               <p>Bible-grounded passage layers and governed reference context.</p>
             </aside>
@@ -274,9 +216,70 @@
               hidden>
               <div class="reader-context-panel-heading">
                 <strong>EXBase66</strong>
-                <button type="button" data-reader-context-close aria-label="Close EXBase66">×</button>
               </div>
               <p>Governed relationships, evidence, provenance, and read-only exploration.</p>
+            <p class="reader-exbase66-edition" data-exbase66-edition>
+              Governed English edition: eng-eng-asv — American Standard Version (1901)
+            </p>
+            <div class="reader-exbase66-menus" data-exbase66-menus>
+              <label for="reader-exbase66-book">
+                Book
+                <select id="reader-exbase66-book" data-exbase66-book disabled>
+                  <option value="">Loading books…</option>
+                </select>
+              </label>
+              <label for="reader-exbase66-chapter">
+                Chapter
+                <select id="reader-exbase66-chapter" data-exbase66-chapter disabled>
+                  <option value="">Select book first</option>
+                </select>
+              </label>
+              <label for="reader-exbase66-verse">
+                Verse
+                <select id="reader-exbase66-verse" data-exbase66-verse disabled>
+                  <option value="">Select chapter first</option>
+                </select>
+              </label>
+              <button type="button" data-exbase66-display disabled>Display evidence</button>
+            </div>
+            <p data-exbase66-message role="status"></p>
+            <div data-exbase66-results aria-live="polite"></div>
+
+            <section class="reader-exbase66-layer-block" aria-labelledby="reader-exbase66-core-layers-title">
+              <h4 id="reader-exbase66-core-layers-title">Core layers</h4>
+              <p class="reader-exbase66-layer-note">Layer identity, evidence tier, and source are shown per layer. Slot order follows the campaign's <code>exbase66Layers</code> array (ordered as configured); no file labels these slots “Core 1–7”.</p>
+              <ol class="reader-exbase66-layer-list">
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">lexical</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="lexical" data-exbase66-layer-group="core" aria-label="Core layer lexical — populated and validated" title="Core layer lexical. Tier: populated + validated (110 lemma-candidates, 114 token-lemma-bindings; validation-report.json 25/25 checks passed). Source: config/campaign.json exbase66Layers[0]; sandbox/exbase66/runs/acceptance-psalm23/run-report.json; validation-report.json." disabled><option>populated + validated — 110 lexical / 114 token-lemma records; 25/25 checks passed</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">morphology</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="morphology" data-exbase66-layer-group="core" aria-label="Core layer morphology — configured only" title="Core layer morphology. Tier: configured only (0 records; morphology-candidates.jsonl). Source: config/campaign.json exbase66Layers[1]; sandbox/exbase66/runs/acceptance-psalm23/run-report.json." disabled><option>configured only — 0 records</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">temporal</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="temporal" data-exbase66-layer-group="core" aria-label="Core layer temporal — configured only" title="Core layer temporal. Tier: configured only (0 records; temporal_features.jsonl). Source: config/campaign.json exbase66Layers[2]; sandbox/exbase66/runs/acceptance-psalm23/run-report.json." disabled><option>configured only — 0 records</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">events</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="events" data-exbase66-layer-group="core" aria-label="Core layer events — configured only" title="Core layer events. Tier: configured only (0 records; event-relations.jsonl). Source: config/campaign.json exbase66Layers[3]; sandbox/exbase66/runs/acceptance-psalm23/run-report.json." disabled><option>configured only — 0 records</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">intertext</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="intertext" data-exbase66-layer-group="core" aria-label="Core layer intertext — configured only" title="Core layer intertext. Tier: configured only (0 records; intertext-relations.jsonl). Source: config/campaign.json exbase66Layers[4]; sandbox/exbase66/runs/acceptance-psalm23/run-report.json." disabled><option>configured only — 0 records</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">variant_witness</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="variant_witness" data-exbase66-layer-group="core" aria-label="Core layer variant_witness — configured only" title="Core layer variant_witness. Tier: configured only (0 records; variant-witness-links.jsonl). Source: config/campaign.json exbase66Layers[5]; sandbox/exbase66/runs/acceptance-psalm23/run-report.json." disabled><option>configured only — 0 records</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">external_chronology</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="external_chronology" data-exbase66-layer-group="core" aria-label="Core layer external_chronology — populated validated gap" title="Core layer external_chronology. Tier: populated validated gap (6 gap records; NO_CHRONOLOGY_TABLE_IN_SOURCE_SCHEMA; no dates invented). Source: config/campaign.json exbase66Layers[6]; sandbox/exbase66/runs/acceptance-psalm23/run-report.json gap_id no_chronology_table." disabled><option>populated validated gap — 6 gap records; NO_CHRONOLOGY_TABLE_IN_SOURCE_SCHEMA</option></select></li>
+              </ol>
+            </section>
+
+            <section class="reader-exbase66-layer-block" aria-labelledby="reader-exbase66-external-layers-title">
+              <h4 id="reader-exbase66-external-layers-title">External layers</h4>
+              <p class="reader-exbase66-layer-note">Layer identity, evidence tier, and source are shown per layer. Slot order follows the campaign's <code>externalCategories</code> array (ordered as configured); no file labels these slots “External 1–7”.</p>
+              <ol class="reader-exbase66-layer-list">
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">lexical</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="lexical" data-exbase66-layer-group="external" aria-label="External layer lexical — populated external evidence" title="External layer lexical. Tier: populated external evidence (record_count 6, state EVIDENCE; OSHB/MorphHB sources). Source: config/campaign.json externalCategories[0]; campaigns/psalm23-promixi/dual-evidence-r1/psalm23-dual-evidence-matrix-r1.json." disabled><option>populated (external evidence) — 6 records, state EVIDENCE; OSHB/MorphHB</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">morphology</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="morphology" data-exbase66-layer-group="external" aria-label="External layer morphology — populated external evidence" title="External layer morphology. Tier: populated external evidence (record_count 6, state EVIDENCE; OSHB/MorphHB sources). Source: config/campaign.json externalCategories[1]; campaigns/psalm23-promixi/dual-evidence-r1/psalm23-dual-evidence-matrix-r1.json." disabled><option>populated (external evidence) — 6 records, state EVIDENCE; OSHB/MorphHB</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">temporal</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="temporal" data-exbase66-layer-group="external" aria-label="External layer temporal — no evidence" title="External layer temporal. Tier: configured only, NO_EVIDENCE in the dual-evidence r1 matrix. Source: config/campaign.json externalCategories[2]; campaigns/psalm23-promixi/dual-evidence-r1/psalm23-dual-evidence-matrix-r1.json." disabled><option>NO_EVIDENCE — configured only</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">events</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="events" data-exbase66-layer-group="external" aria-label="External layer events — no evidence" title="External layer events. Tier: configured only, NO_EVIDENCE in the dual-evidence r1 matrix. Source: config/campaign.json externalCategories[3]; campaigns/psalm23-promixi/dual-evidence-r1/psalm23-dual-evidence-matrix-r1.json." disabled><option>NO_EVIDENCE — configured only</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">intertext</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="intertext" data-exbase66-layer-group="external" aria-label="External layer intertext — no evidence" title="External layer intertext. Tier: configured only, NO_EVIDENCE in the dual-evidence r1 matrix. Source: config/campaign.json externalCategories[4]; campaigns/psalm23-promixi/dual-evidence-r1/psalm23-dual-evidence-matrix-r1.json." disabled><option>NO_EVIDENCE — configured only</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">variant_witness</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="variant_witness" data-exbase66-layer-group="external" aria-label="External layer variant_witness — no evidence" title="External layer variant_witness. Tier: configured only, NO_EVIDENCE in the dual-evidence r1 matrix. Source: config/campaign.json externalCategories[5]; campaigns/psalm23-promixi/dual-evidence-r1/psalm23-dual-evidence-matrix-r1.json." disabled><option>NO_EVIDENCE — configured only</option></select></li>
+                <li class="reader-exbase66-layer-entry"><span class="reader-exbase66-layer-name">chronology</span><select class="reader-exbase66-layer-menu" data-exbase66-layer-name="chronology" data-exbase66-layer-group="external" aria-label="External layer chronology — validated gap" title="External layer chronology. Tier: validated gap — config chronologyDisposition.validatedGap=true (NO_CHRONOLOGY_TABLE_IN_SOURCE_SCHEMA), NO_EVIDENCE in the dual-evidence r1 matrix. No dates invented. Source: config/campaign.json:287 chronologyDisposition; externalCategories[6]; campaigns/psalm23-promixi/dual-evidence-r1/psalm23-dual-evidence-matrix-r1.json." disabled><option>validated gap — chronologyDisposition.validatedGap; NO_EVIDENCE</option></select></li>
+              </ol>
+            </section>
+
+            <details class="reader-exbase66-layer-block reader-exbase66-diagnostics">
+              <summary id="reader-exbase66-colibri-title" class="reader-exbase66-diagnostics-summary">Colibri wrap-up — integration diagnostics</summary>
+              <p>Colibri is configured for this campaign but not integrated live. Config (<code>config/campaign.json</code>) sets role <code>SYNTHESIS_ONLY</code>, <code>authority:false</code>, <code>startServer:false</code>, model <code>qwen36-colibri</code>, with a loopback endpoint at 127.0.0.1:8000 (<code>/v1/models</code>, <code>/v1/chat/completions</code>). Nothing in this repository starts that server, and the site never calls it.</p>
+              <p>Existing synthesis artifacts: <code>dual-evidence-colibri-r1-ngen1024/</code> — per-day JSON (e.g. <code>days/day-01.json</code> with <code>ai_authority:false</code>, role <code>DUAL_EVIDENCE_SYNTHESIS</code>, and a <code>source_matrix_sha256</code>) plus a <code>SHA256SUMS</code> manifest.</p>
+              <p>ROE learning for this work is advisory and observation-only (LEARNING_AND_OBSERVATION_ONLY; Authorization NONE). No artifact is ingested by the site, and there are no live Colibri calls from the site.</p>
+            </details>
+
             </aside>
           </div>
 

@@ -166,6 +166,60 @@ assert.ok(
   "Base66 Reader must render translation, original-language, and Strong layers"
 );
 
+/*
+ * Predictable navigation: the View dropdown is the single visible control for
+ * the four reader modes, in the approved order, with no Concordance option and
+ * no free-text Base66 passage input or separate Base66/EXBase66 toggle bars.
+ */
+const readerModeSelectMatch = html.match(
+  /<select id="reader-mode"[^>]*>([\s\S]*?)<\/select>/
+);
+assert.ok(readerModeSelectMatch, "Reader View dropdown is missing");
+
+const readerModeOptions = [
+  ...readerModeSelectMatch[1].matchAll(
+    /<option value="([^"]+)">([^<]+)<\/option>/g
+  ),
+].map((match) => ({ value: match[1], label: match[2].trim() }));
+
+assert.deepEqual(
+  readerModeOptions,
+  [
+    { value: "reader", label: "Reader" },
+    { value: "century", label: "Century" },
+    { value: "base66", label: "Base66" },
+    { value: "exbase66", label: "EXBase66" },
+  ],
+  "View dropdown must offer exactly Reader, Century, Base66, EXBase66 in order"
+);
+
+assert.equal(
+  /concordance/i.test(readerModeSelectMatch[0]),
+  false,
+  "Concordance must not be offered in the View dropdown"
+);
+
+assert.equal(
+  js.toLowerCase().includes("concordance"),
+  false,
+  "Concordance reader mode must be removed from site.js"
+);
+
+for (const removedNavigation of [
+  "reader-base66-reference",
+  "reader-base66-read",
+  "data-reader-base66-toggle",
+  "data-reader-exbase66-toggle",
+  "data-reader-context-close",
+]) {
+  assert.equal(
+    html.toLowerCase().includes(removedNavigation) ||
+      js.toLowerCase().includes(removedNavigation),
+    false,
+    `Removed navigation control still present: ${removedNavigation}`
+  );
+}
+
 assert.equal(
   worker.includes("/v1/base66"),
   false,

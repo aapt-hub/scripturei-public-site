@@ -29,8 +29,6 @@ const readerModeDescriptions = {
   base66: "Base66 governed editions and reference sources.",
   exbase66: "EXBase66 governed passage metadata and validated relationships.",
   century: "Browse published Scripture witnesses by century (I–XX).",
-  concordance:
-    "Concordance is pending a governed STRATEGi contract and validated API.",
 };
 
 const base66EditionIDs = new Set([
@@ -54,51 +52,24 @@ const setReaderModeMessage = (message) => {
 
 const setReaderModeState = (mode) => {
   const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
-  const readerAvailable =
-    mode === "reader" || mode === "base66" || mode === "century";
-  const exbase66Mode = mode === "exbase66";
 
   setReaderModeMessage(description);
 
-  const base66QueryMode = mode === "base66";
+  // The View control is the single navigation control for the three reader
+  // modes; it solely drives which context panel is visible.
+  if (readerBase66Panel) readerBase66Panel.hidden = mode !== "base66";
+  if (readerExbase66Panel) readerExbase66Panel.hidden = mode !== "exbase66";
 
-  if (readerExbase66Query) {
-    readerExbase66Query.hidden = !exbase66Mode;
+  // EXBase66 is a read-only governance/evidence panel. Opening or closing it
+  // must leave the loaded Bible reader (edition, book, chapter, and passage)
+  // untouched, so it never resets the reader selection or clears the passage.
+  if (mode === "exbase66") {
+    ensureExbase66MenusLoaded();
+    return;
   }
 
-  if (readerExbase66PassageID && !exbase66Mode) {
-    readerExbase66PassageID.value = "";
-  }
-
-  if (readerExbase66Search) {
-    readerExbase66Search.disabled =
-      !exbase66Mode || !readerExbase66PassageID?.value.trim();
-  }
-
-  if (readerBase66Query) {
-    readerBase66Query.hidden = !base66QueryMode;
-  }
-
-  for (const control of readerLegacyNavigation) {
-    control.hidden = base66QueryMode || exbase66Mode;
-  }
-
-  if (readerLanguage?.closest("label")) {
-    readerLanguage.closest("label").hidden = exbase66Mode;
-  }
-
-  if (readerEdition?.closest("label")) {
-    readerEdition.closest("label").hidden = exbase66Mode;
-  }
-
-  if (readerBase66Reference && !base66QueryMode) {
-    readerBase66Reference.value = "";
-  }
-
-  if (readerBase66Read) {
-    readerBase66Read.disabled =
-      !base66QueryMode || !readerEdition?.value || !readerBase66Reference?.value.trim();
-  }
+  const readerAvailable =
+    mode === "reader" || mode === "base66" || mode === "century";
 
   for (const control of [
     readerLanguage,
@@ -109,13 +80,12 @@ const setReaderModeState = (mode) => {
     if (control) control.disabled = !readerAvailable;
   }
 
+  resetReaderSelectionState();
+  clearPassage();
+
   if (readerAvailable) {
-    resetReaderSelectionState();
-    clearPassage();
     setReaderMessage("Loading languages…");
   } else {
-    resetReaderSelectionState();
-    clearPassage();
     setReaderMessage(description);
   }
 };
@@ -124,13 +94,13 @@ const readerLanguage = document.querySelector("#reader-language");
 const readerEdition = document.querySelector("#reader-edition");
 const readerBook = document.querySelector("#reader-book");
 const readerChapter = document.querySelector("#reader-chapter");
-const readerBase66Query = document.querySelector("[data-base66-query]");
-const readerBase66Reference = document.querySelector("#reader-base66-reference");
-const readerBase66Read = document.querySelector("#reader-base66-read");
-const readerExbase66Query = document.querySelector("[data-exbase66-query]");
-const readerExbase66PassageID = document.querySelector("#reader-exbase66-passage-id");
-const readerExbase66Search = document.querySelector("#reader-exbase66-search");
-const readerLegacyNavigation = [...document.querySelectorAll(".reader-legacy-navigation")];
+const readerBase66Panel = document.querySelector("[data-reader-base66-panel]");
+const readerExbase66Book = document.querySelector("[data-exbase66-book]");
+const readerExbase66Chapter = document.querySelector("[data-exbase66-chapter]");
+const readerExbase66Verse = document.querySelector("[data-exbase66-verse]");
+const readerExbase66Display = document.querySelector("[data-exbase66-display]");
+const readerExbase66Edition = document.querySelector("[data-exbase66-edition]");
+const readerExbase66Panel = document.querySelector("[data-reader-exbase66-panel]");
 const readerMessage = document.querySelector("#reader-message");
 const readerPassage = document.querySelector("#reader-passage");
 const readerFontDecrease = document.querySelector("[data-reader-font-decrease]");
@@ -896,124 +866,6 @@ const loadChapters = async (editionID, bookCode) => {
   setReaderMessage("Select a chapter.");
 };
 
-const normalizeBase66BookQuery = (value) =>
-  String(value ?? "")
-    .trim()
-    .toLocaleLowerCase()
-    .replace(/[.\s_-]+/g, " ");
-
-const parseBase66Reference = (value) => {
-  const raw = String(value ?? "").trim();
-  if (!raw) return null;
-
-  const match = raw.match(/^(.+?)(?:\s+(\d+)(?::(\d+))?)?$/u);
-  if (!match) return null;
-
-  const book = match[1]?.trim() ?? "";
-  const chapter = match[2] ? Number(match[2]) : null;
-  const verse = match[3] ? Number(match[3]) : null;
-
-  if (!book) return null;
-  if (chapter !== null && (!Number.isInteger(chapter) || chapter < 1)) return null;
-  if (verse !== null && (!Number.isInteger(verse) || verse < 1)) return null;
-
-  return { book, chapter, verse };
-};
-
-const resolveBase66BookOption = (query) => {
-  const wanted = normalizeBase66BookQuery(query);
-
-  return [...readerBook.options].find((option) => {
-    if (!option.value) return false;
-
-    return (
-      normalizeBase66BookQuery(option.value) === wanted ||
-      normalizeBase66BookQuery(option.textContent) === wanted
-    );
-  }) ?? null;
-};
-
-const focusBase66Verse = (verseNumber) => {
-  if (!verseNumber || !readerPassage) return false;
-
-  const verseBlocks = [...readerPassage.querySelectorAll(".reader-base66-verse")];
-
-  for (const block of verseBlocks) {
-    const label = block.querySelector("sup");
-    if (String(label?.textContent ?? "").trim() !== String(verseNumber)) continue;
-
-    block.classList.add("reader-base66-target");
-    block.scrollIntoView({ behavior: "smooth", block: "center" });
-    return true;
-  }
-
-  return false;
-};
-
-const runBase66ReferenceQuery = async () => {
-  if (readerMode?.value !== "base66") return;
-  if (!readerEdition?.value) {
-    setReaderMessage("Select a Bible / Translation first.");
-    return;
-  }
-
-  const parsed = parseBase66Reference(readerBase66Reference?.value);
-  if (!parsed) {
-    setReaderMessage("Enter a passage such as John 3:16.");
-    return;
-  }
-
-  await loadBooks(readerEdition.value);
-
-  const bookOption = resolveBase66BookOption(parsed.book);
-  if (!bookOption) {
-    setReaderMessage(`Book not found: ${parsed.book}`);
-    return;
-  }
-
-  readerBook.value = bookOption.value;
-
-  if (parsed.chapter === null) {
-    await loadChapters(readerEdition.value, readerBook.value);
-    setReaderMessage("Select or enter a chapter.");
-    syncReaderQuery();
-    return;
-  }
-
-  await loadChapters(readerEdition.value, readerBook.value);
-
-  const chapterValue = String(parsed.chapter);
-  const chapterExists = [...readerChapter.options].some(
-    (option) => option.value === chapterValue
-  );
-
-  if (!chapterExists) {
-    setReaderMessage(`Chapter not found: ${parsed.chapter}`);
-    return;
-  }
-
-  readerChapter.value = chapterValue;
-
-  await loadPassage(
-    readerEdition.value,
-    readerBook.value,
-    readerChapter.value
-  );
-
-  const params = new URLSearchParams(window.location.search);
-  if (parsed.verse !== null) params.set("verse", String(parsed.verse));
-  else params.delete("verse");
-  window.history.replaceState(
-    null,
-    "",
-    `${window.location.pathname}?${params.toString()}`
-  );
-
-  if (parsed.verse !== null && !focusBase66Verse(parsed.verse)) {
-    setReaderMessage(`Verse ${parsed.verse} was not found in this chapter.`);
-  }
-};
-
 const loadPassage = async (editionID, bookCode, chapter) => {
   clearPassage();
 
@@ -1119,136 +971,848 @@ const loadPassage = async (editionID, bookCode, chapter) => {
   setReaderMessage("");
 };
 
-const runExbase66Query = async () => {
-  if (readerMode?.value !== "exbase66") return;
+/* =====================================================================
+   EXBase66 MENU-DRIVEN EVIDENCE POC
+   Menus only: the fixed governed English edition is eng-eng-asv. Book and
+   chapter options come from the existing Reader API. There is no governed
+   reference-to-passage-ID binding and no verse-level Reader endpoint, so
+   the evidence area reports that honestly and fabricates no values.
+   ===================================================================== */
 
-  const passageID = readerExbase66PassageID?.value.trim() ?? "";
+const exbase66EditionID = "eng-eng-asv";
+const EXBASE66_VERSE_UNAVAILABLE =
+  "Verse selection isn't available for this chapter";
+let exbase66BooksLoaded = false;
 
-  if (!/^\d+$/.test(passageID) || Number(passageID) < 1) {
-    setReaderMessage("Enter a valid EXBase66 passage ID.");
+const setExbase66Message = (message) => {
+  const node = readerExbase66Panel?.querySelector("[data-exbase66-message]");
+  if (node) node.textContent = message;
+};
+
+const makeExbase66Option = (text) => {
+  const option = document.createElement("option");
+  option.value = "";
+  option.textContent = text;
+  return option;
+};
+
+const resetExbase66VerseMenu = (chapterSelected) => {
+  if (!readerExbase66Verse) return;
+
+  readerExbase66Verse.replaceChildren(
+    makeExbase66Option(
+      chapterSelected ? EXBASE66_VERSE_UNAVAILABLE : "Select chapter first"
+    )
+  );
+
+  readerExbase66Verse.disabled = true;
+};
+
+const populateExbase66VerseMenu = (bookCode, chapter) => {
+  if (!readerExbase66Verse) return;
+
+  const isPsalm23 =
+    bookCode === EXBASE66_PSALM23_BOOK_CODE &&
+    chapter === EXBASE66_PSALM23_CHAPTER;
+
+  // Only the verified Psalm 23 binding is offered; every other selection keeps
+  // the verse menu disabled because no governed verse list exists for it and no
+  // verse-list endpoint is exposed. Nothing is inferred or fabricated.
+  if (!isPsalm23) {
+    resetExbase66VerseMenu(Boolean(chapter));
     return;
   }
 
-  if (!readerPassage) return;
+  const options = [makeExbase66Option("Select verse (optional)")];
 
-  setReaderMessage("Loading EXBase66 passage and relations...");
-  readerPassage.replaceChildren();
-  setReaderToolsEnabled(false);
+  for (let verse = 1; verse <= EXBASE66_PSALM23_VERSE_COUNT; verse += 1) {
+    const option = document.createElement("option");
+    option.value = String(verse);
+    option.textContent = `Psalm 23:${verse}`;
+    options.push(option);
+  }
+
+  readerExbase66Verse.replaceChildren(...options);
+  readerExbase66Verse.disabled = false;
+};
+
+const updateExbase66EditionLabel = () => {
+  if (!readerExbase66Edition) return;
+
+  const edition = readerEditions.find(
+    (item) => getEditionID(item) === exbase66EditionID
+  );
+  const name = edition ? getEditionName(edition) : "";
+
+  if (!name || name === exbase66EditionID) return;
+
+  readerExbase66Edition.textContent =
+    `Governed English edition: ${exbase66EditionID} — ${name}`;
+};
+
+const loadExbase66Books = async () => {
+  if (!readerExbase66Book) return;
+
+  readerExbase66Book.disabled = true;
+  setExbase66Message("Loading EXBase66 books…");
 
   try {
-    const [passageResponse, relationsResponse] = await Promise.all([
-      fetch(`/v1/exbase66/passage/${encodeURIComponent(passageID)}`),
-      fetch(`/v1/exbase66/relations/${encodeURIComponent(passageID)}`),
-    ]);
+    const response = await fetch(
+      `${readerApiPrefix()}/reader/books?edition=${encodeURIComponent(
+        exbase66EditionID
+      )}`
+    );
 
-    if (!passageResponse.ok) {
-      throw new Error(`Passage request failed (${passageResponse.status})`);
-    }
+    if (!response.ok) throw new Error(`Books HTTP ${response.status}`);
 
-    if (!relationsResponse.ok) {
-      throw new Error(`Relations request failed (${relationsResponse.status})`);
-    }
+    const books = await response.json();
 
-    const passage = await passageResponse.json();
-    const relations = await relationsResponse.json();
+    populateSelect(
+      readerExbase66Book,
+      books,
+      (book) => book.Code,
+      (book) => book.Name,
+      "Select book"
+    );
 
-    const heading = document.createElement("h4");
-    heading.textContent =
-      passage.canonical_passage_key || `EXBase66 passage ${passageID}`;
-    readerPassage.appendChild(heading);
-
-    const metadata = document.createElement("dl");
-    metadata.className = "reader-exbase66-metadata";
-
-    const fields = [
-      ["Passage ID", passage.passage_id],
-      ["Canonical key", passage.canonical_passage_key],
-      ["Book", passage.book_code],
-      ["Chapter", passage.chapter],
-      ["Graph node", passage.graph_node_id],
-    ];
-
-    for (const [label, value] of fields) {
-      if (value === null || value === undefined || value === "") continue;
-
-      const term = document.createElement("dt");
-      term.textContent = label;
-
-      const description = document.createElement("dd");
-      description.textContent = String(value);
-
-      metadata.append(term, description);
-    }
-
-    readerPassage.appendChild(metadata);
-
-    const relationsHeading = document.createElement("h4");
-    relationsHeading.textContent = "Relations";
-    readerPassage.appendChild(relationsHeading);
-
-    if (!Array.isArray(relations) || relations.length === 0) {
-      const empty = document.createElement("p");
-      empty.textContent = "No passage-keyed EXBase66 relations are available for this passage.";
-      readerPassage.appendChild(empty);
-    } else {
-      const list = document.createElement("ul");
-      list.className = "reader-exbase66-relations";
-
-      for (const relation of relations) {
-        const item = document.createElement("li");
-
-        const title = document.createElement("strong");
-        title.textContent = relation.relation_type || "Relation";
-        item.appendChild(title);
-
-        const details = [
-          relation.from_passage_id != null
-            ? `from ${relation.from_passage_id}`
-            : "",
-          relation.to_passage_id != null
-            ? `to ${relation.to_passage_id}`
-            : "",
-          relation.source_id ? `source ${relation.source_id}` : "",
-          relation.source_ref ? `ref ${relation.source_ref}` : "",
-          relation.evidence_ref ? `evidence ${relation.evidence_ref}` : "",
-        ].filter(Boolean);
-
-        if (details.length) {
-          item.appendChild(document.createTextNode(` — ${details.join(" · ")}`));
-        }
-
-        list.appendChild(item);
-      }
-
-      readerPassage.appendChild(list);
-    }
-
-    setReaderMessage("");
+    setExbase66Message(
+      "Select a book, then a chapter. Evidence is displayed only when you press the Display-evidence button."
+    );
   } catch (error) {
-    console.error("EXBase66 query failed:", error);
-    setReaderMessage(
-      "EXBase66 results are temporarily unavailable. No result was fabricated."
+    exbase66BooksLoaded = false;
+    console.error("EXBase66 book menu failed:", error);
+    readerExbase66Book.replaceChildren(makeExbase66Option("Unable to load books"));
+    readerExbase66Book.disabled = true;
+    setExbase66Message(
+      "Unable to load the EXBase66 book menu right now. No evidence was fabricated."
     );
   }
 };
 
-readerExbase66PassageID?.addEventListener("input", () => {
-  if (!readerExbase66Search) return;
+const loadExbase66Editions = async () => {
+  if (readerEditions.length > 0) {
+    updateExbase66EditionLabel();
+    return;
+  }
 
-  readerExbase66Search.disabled =
-    readerMode?.value !== "exbase66" ||
-    !readerExbase66PassageID.value.trim();
-});
+  try {
+    readerEditions = await fetchReaderEditions();
+  } catch (error) {
+    console.error("EXBase66 edition lookup failed:", error);
+    readerEditions = [];
+  }
 
-readerExbase66PassageID?.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    event.preventDefault();
-    void runExbase66Query();
+  // Falls back to the static governed label already present in the markup
+  // when the editions catalog is unavailable (no live Reader API).
+  updateExbase66EditionLabel();
+};
+
+const ensureExbase66MenusLoaded = () => {
+  // The edition label needs the editions catalog, but the main Reader menus
+  // must stay untouched in EXBase66 mode, so load editions for lookup only.
+  void loadExbase66Editions();
+
+  if (exbase66BooksLoaded || !readerExbase66Book) return;
+
+  exbase66BooksLoaded = true;
+  void loadExbase66Books();
+};
+
+// Governed reference-to-passage-ID binding present in the repository: only the
+// Psalm 23 campaign (OT:PSA:23:1-6 => passage IDs 145460-145465). The r2 ASV
+// verse records share one binding_sha256 across the six verses.
+const EXBASE66_ASV_BINDING_SHA256 =
+  "92aa810b7312c4489483242e8b18e6fdd863b453e2066be3a5b0cf00bf9c45aa";
+const EXBASE66_PSALM23_BOOK_CODE = "PSA";
+const EXBASE66_PSALM23_CHAPTER = "23";
+const EXBASE66_PSALM23_FIRST_PASSAGE_ID = 145460;
+const EXBASE66_PSALM23_VERSE_COUNT = 6;
+
+// =====================================================================
+// EXBASE66_VERSE_EVIDENCE_R1 — static verified data
+// Embedded from campaign artifacts so the panel reports verse-scoped evidence
+// with no network fetch and no inference. Do not edit by hand without
+// re-reading the cited source files.
+// =====================================================================
+
+const EXBASE66_MATRIX_SOURCE_PATH =
+  "campaigns/psalm23-promixi/dual-evidence-r3/psalm23-dual-evidence-matrix-r3.json";
+const EXBASE66_COLIBRI_DIR =
+  "campaigns/psalm23-promixi/dual-evidence-colibri-r1-ngen1024";
+
+// Visible four-tier distinction: configured / populated / validated / missing.
+const EXBASE66_TIER = {
+  configured: "configured",
+  populated: "populated",
+  validated: "validated",
+  missing: "missing",
+};
+const EXBASE66_TIER_LEGEND =
+  "Tiers: configured = layer configured, 0 verse records; populated = verse records exist; validated = validated gap / validation stated in the source; missing = NO_EVIDENCE. Counts are per verse, never summed.";
+
+const EXBASE66_CORE_LAYER_ORDER = [
+  "lexical",
+  "morphology",
+  "temporal",
+  "events",
+  "intertext",
+  "variant_witness",
+  "external_chronology",
+];
+const EXBASE66_EXTERNAL_LAYER_ORDER = [
+  "lexical",
+  "morphology",
+  "temporal",
+  "events",
+  "intertext",
+  "variant_witness",
+  "chronology",
+];
+
+// Per-verse evidence from psalm23-dual-evidence-matrix-r3.json.
+const EXBASE66_VERSE_EVIDENCE = {
+  1: {
+    canonicalKey: "OT:PSA:23:1",
+    passageId: 145460,
+    lexical: {
+      exbase66BindingRecords: 12,
+      externalTokenRecords: 6,
+      externalSource: "OSHB/MorphHB",
+      comparison: "ALIGNMENT_REQUIRED",
+    },
+    morphology: { exbase66State: "NO_EVIDENCE", externalRecords: 6 },
+    otherLayers: {
+      chronology: "NO_EVIDENCE",
+      events: "NO_EVIDENCE",
+      intertext: "NO_EVIDENCE",
+      temporal: "NO_EVIDENCE",
+      variant_witness: "NO_EVIDENCE",
+    },
+  },
+  2: {
+    canonicalKey: "OT:PSA:23:2",
+    passageId: 145461,
+    lexical: {
+      exbase66BindingRecords: 14,
+      externalTokenRecords: 7,
+      externalSource: "OSHB/MorphHB",
+      comparison: "ALIGNMENT_REQUIRED",
+    },
+    morphology: { exbase66State: "NO_EVIDENCE", externalRecords: 7 },
+    otherLayers: {
+      chronology: "NO_EVIDENCE",
+      events: "NO_EVIDENCE",
+      intertext: "NO_EVIDENCE",
+      temporal: "NO_EVIDENCE",
+      variant_witness: "NO_EVIDENCE",
+    },
+  },
+  3: {
+    canonicalKey: "OT:PSA:23:3",
+    passageId: 145462,
+    lexical: {
+      exbase66BindingRecords: 14,
+      externalTokenRecords: 7,
+      externalSource: "OSHB/MorphHB",
+      comparison: "ALIGNMENT_REQUIRED",
+    },
+    morphology: { exbase66State: "NO_EVIDENCE", externalRecords: 7 },
+    otherLayers: {
+      chronology: "NO_EVIDENCE",
+      events: "NO_EVIDENCE",
+      intertext: "NO_EVIDENCE",
+      temporal: "NO_EVIDENCE",
+      variant_witness: "NO_EVIDENCE",
+    },
+  },
+  4: {
+    canonicalKey: "OT:PSA:23:4",
+    passageId: 145463,
+    lexical: {
+      exbase66BindingRecords: 30,
+      externalTokenRecords: 15,
+      externalSource: "OSHB/MorphHB",
+      comparison: "ALIGNMENT_REQUIRED",
+    },
+    morphology: { exbase66State: "NO_EVIDENCE", externalRecords: 15 },
+    otherLayers: {
+      chronology: "NO_EVIDENCE",
+      events: "NO_EVIDENCE",
+      intertext: "NO_EVIDENCE",
+      temporal: "NO_EVIDENCE",
+      variant_witness: "NO_EVIDENCE",
+    },
+  },
+  5: {
+    canonicalKey: "OT:PSA:23:5",
+    passageId: 145464,
+    lexical: {
+      exbase66BindingRecords: 20,
+      externalTokenRecords: 10,
+      externalSource: "OSHB/MorphHB",
+      comparison: "ALIGNMENT_REQUIRED",
+    },
+    morphology: { exbase66State: "NO_EVIDENCE", externalRecords: 10 },
+    otherLayers: {
+      chronology: "NO_EVIDENCE",
+      events: "NO_EVIDENCE",
+      intertext: "NO_EVIDENCE",
+      temporal: "NO_EVIDENCE",
+      variant_witness: "NO_EVIDENCE",
+    },
+  },
+  6: {
+    canonicalKey: "OT:PSA:23:6",
+    passageId: 145465,
+    lexical: {
+      exbase66BindingRecords: 24,
+      externalTokenRecords: 12,
+      externalSource: "OSHB/MorphHB",
+      comparison: "ALIGNMENT_REQUIRED",
+    },
+    morphology: { exbase66State: "NO_EVIDENCE", externalRecords: 12 },
+    otherLayers: {
+      chronology: "NO_EVIDENCE",
+      events: "NO_EVIDENCE",
+      intertext: "NO_EVIDENCE",
+      temporal: "NO_EVIDENCE",
+      variant_witness: "NO_EVIDENCE",
+    },
+  },
+};
+
+// Existing Colibri synthesis (dual-evidence-colibri-r1-ngen1024). ai_authority
+// stays false; these are embedded verbatim, not regenerated or inferred. The
+// fileSha256 values are copied from that directory's SHA256SUMS manifest.
+const EXBASE66_COLIBRI_SYNTHESIS = {
+  1: {
+    file: "days/day-01.json",
+    fileSha256:
+      "c97802b56b7f2874cf5d264f1a6f76bd3b5bec5bafcf4e3df6f91b87be503cc2",
+    canonicalKey: "OT:PSA:23:1",
+    summary: `Analysis of Psalm 23:1 (OT:PSA:23:1) indicates a required alignment between ExBase66 and external lexical data (OSHB/MorphHB). The lexical comparison is classified as DIFFER, with a remediation reason noting that non-equivalent representations were inferred without proven semantic disagreement. ExBase66 provides 12 binding records but zero lemma records. Morphology is marked EXTERNAL_ONLY, with ExBase66 having NO_EVIDENCE state. Other layers including chronology, events, and intertextuality have NO_EVIDENCE.`,
+    reflection: `The discrepancy in lexical comparison highlights the need for precise semantic equivalence rather than mere representation matching. The absence of ExBase66 lemma records and morphology evidence necessitates reliance on external sources, while maintaining strict boundaries on inference.`,
+    aiAuthority: false,
+    role: "DUAL_EVIDENCE_SYNTHESIS",
+    model: "qwen36-colibri",
+    sourceMatrixSha256:
+      "daa26efbb037b6a3bb862c221f61a5204771412fa8426a12ff1b9514541dbed0",
+  },
+  2: {
+    file: "days/day-02.json",
+    fileSha256:
+      "66ac549047ebce76172d46fb1f2d2fc65592f26883a857cfeee17de0e1168c57",
+    canonicalKey: "OT:PSA:23:2",
+    summary: `Analysis of OT:PSA:23:2 indicates a lexical comparison marked as ALIGNMENT_REQUIRED. EXBase66 data shows 14 binding records but zero lemma records, while external OSHB/MorphHB sources provide 7 token records. The system classified the relationship as DIFFER due to non-equivalent representations, though the remediation reason notes this was an inference without proven semantic disagreement. Morphological evidence is exclusively external.`,
+    reflection: `The evidence highlights a gap between binding records and lemma validation in EXBase66. The classification of DIFFER is explicitly flagged as inferred rather than semantically proven. This suggests caution in interpreting lexical differences without further semantic alignment. The absence of EXBase66 morphology records necessitates reliance on external sources.`,
+    aiAuthority: false,
+    role: "DUAL_EVIDENCE_SYNTHESIS",
+    model: "qwen36-colibri",
+    sourceMatrixSha256:
+      "daa26efbb037b6a3bb862c221f61a5204771412fa8426a12ff1b9514541dbed0",
+  },
+  3: {
+    file: "days/day-03.json",
+    fileSha256:
+      "02170650bd577b4c642142deb30ff2f394416fa9229e956653be8416b989897c",
+    canonicalKey: "OT:PSA:23:3",
+    summary: `Analysis of Psalm 23:3 indicates lexical comparison requires resolution (ALIGNMENT_REQUIRED) due to inferred DIFFER classification from non-equivalent representations without proven semantic disagreement. Morphology data is external-only (OSHB/MorphHB) with seven records, while EXBase66 morphology is explicitly NO_EVIDENCE. No chronology, events, intertextual, temporal, or variant witness evidence is present.`,
+    reflection: `The evidence highlights a methodological boundary: lexical differences are noted as non-equivalent but not semantically disproven, requiring alignment rather than immediate disagreement. Morphological data exists only in external sources, preserving the distinction between EXBase66 and OSHB/MorphHB inputs. Uncertainty is maintained regarding semantic equivalence.`,
+    aiAuthority: false,
+    role: "DUAL_EVIDENCE_SYNTHESIS",
+    model: "qwen36-colibri",
+    sourceMatrixSha256:
+      "daa26efbb037b6a3bb862c221f61a5204771412fa8426a12ff1b9514541dbed0",
+  },
+  4: {
+    file: "days/day-04.json",
+    fileSha256:
+      "ce59239dda23f65aade8efef99dcad56945c4947a8eb798f301748a60eb3ec0e",
+    canonicalKey: "OT:PSA:23:4",
+    summary: `The analysis of Psalm 23:4 indicates that while EXBase66 and external sources (OSHB/MorphHB) provide lexical records for comparable values, there is no morphological evidence from EXBase66 (state: NO_EVIDENCE). The EXBase66 layer classifies the lexical comparison as DIFFER due to non-equivalent representations without proven semantic disagreement, whereas the morphology comparison is marked EXTERNAL_ONLY. No chronology, events, intertextual, temporal, or variant witness evidence is present.`,
+    reflection: `The divergence between lexical records and the absence of morphological evidence in EXBase66 highlights a structural gap. The classification of DIFFER is explicitly remediated as inferred rather than semantically proven, underscoring the necessity of preserving uncertainty over forced alignment.`,
+    aiAuthority: false,
+    role: "DUAL_EVIDENCE_SYNTHESIS",
+    model: "qwen36-colibri",
+    sourceMatrixSha256:
+      "daa26efbb037b6a3bb862c221f61a5204771412fa8426a12ff1b9514541dbed0",
+  },
+  5: {
+    file: "days/day-05.json",
+    fileSha256:
+      "fad6897ab02c3fe09a856e296be3ec0cb809e262105ab2d09131d81377da3458",
+    canonicalKey: "OT:PSA:23:5",
+    summary: `Analysis of Psalm 23:5 indicates a comparison state of ALIGNMENT_REQUIRED for lexical data, driven by non-equivalent representations between EXBase66 and external sources (OSHB/MorphHB) without proven semantic disagreement. Morphological data is marked EXTERNAL_ONLY, with zero records in EXBase66 and ten in external sources. No evidence exists for chronology, events, intertextuality, temporal aspects, or variant witnesses.`,
+    reflection: `The boundary between linguistic representation and semantic meaning remains unresolved. The system correctly identifies that record-count differences do not constitute textual disagreement. The absence of EXBase66 morphology prevents morphological inference, maintaining strict adherence to the evidence package. Authority remains with the Bible, while the AI serves only as a bounded synthesis layer reflecting the provided data boundaries.`,
+    aiAuthority: false,
+    role: "DUAL_EVIDENCE_SYNTHESIS",
+    model: "qwen36-colibri",
+    sourceMatrixSha256:
+      "daa26efbb037b6a3bb862c221f61a5204771412fa8426a12ff1b9514541dbed0",
+  },
+  6: {
+    file: "days/day-06.json",
+    fileSha256:
+      "4eed6e0cda8ba042623ba00a04d3ae06ffbea47ba49833c2b579963d522b661b",
+    canonicalKey: "OT:PSA:23:6",
+    summary: `Analysis of Psalm 23:6 indicates a lexical comparison requiring further alignment, with EXBase66 providing 24 binding records but zero lemma records. External sources from OSHB/MorphHB provide 12 token records. The system classifies the lexical relationship as DIFFER due to non-equivalent representations, though this is noted as an inference without proven semantic disagreement. Morphological data is exclusively external, with no EXBase66 morphological evidence available.`,
+    reflection: `The data presents a structural divergence between internal binding counts and external token records. The classification of DIFFER is procedural, stemming from representation mismatches rather than explicit theological contradiction. The absence of EXBase66 morphological evidence necessitates reliance on external sources for morphological understanding, highlighting the bounded nature of the available evidence package.`,
+    aiAuthority: false,
+    role: "DUAL_EVIDENCE_SYNTHESIS",
+    model: "qwen36-colibri",
+    sourceMatrixSha256:
+      "daa26efbb037b6a3bb862c221f61a5204771412fa8426a12ff1b9514541dbed0",
+  },
+};
+
+const appendExbase66Definition = (parent, label, value) => {
+  const term = document.createElement("dt");
+  term.textContent = label;
+
+  const description = document.createElement("dd");
+  description.textContent = value;
+
+  parent.append(term, description);
+};
+
+const appendExbase66Psalm23Binding = (results, selectedVerse = "") => {
+  const intro = document.createElement("p");
+  intro.textContent = selectedVerse
+    ? `Governed reference-to-passage-ID binding for Psalm 23, verse ${selectedVerse} (the campaign's verified verse scope):`
+    : "Governed reference-to-passage-ID binding found for this chapter (Psalm 23, verses 1-6 — the campaign's selected-passage scope):";
+  results.appendChild(intro);
+
+  const bindings = document.createElement("ul");
+  bindings.className = "reader-exbase66-relations";
+
+  const versesToShow = selectedVerse
+    ? [Number(selectedVerse)]
+    : [...Array(EXBASE66_PSALM23_VERSE_COUNT)].map((_, index) => index + 1);
+
+  for (const verse of versesToShow) {
+    const item = document.createElement("li");
+    item.textContent = `OT:PSA:23:${verse} — passage ID ${
+      EXBASE66_PSALM23_FIRST_PASSAGE_ID + verse - 1
+    }`;
+    bindings.appendChild(item);
+  }
+
+  results.appendChild(bindings);
+
+  const metadata = document.createElement("dl");
+  metadata.className = "reader-exbase66-metadata";
+  appendExbase66Definition(metadata, "Canonical keys", "OT:PSA:23:1 … OT:PSA:23:6");
+  appendExbase66Definition(metadata, "Passage IDs", "145460 … 145465");
+  appendExbase66Definition(metadata, "Edition", "eng-eng-asv");
+  appendExbase66Definition(metadata, "binding_sha256", EXBASE66_ASV_BINDING_SHA256);
+  appendExbase66Definition(
+    metadata,
+    "Binding source",
+    "campaigns/psalm23-promixi/psalm23-asv-1-6-complete-verse-records-r2.json"
+  );
+  appendExbase66Definition(
+    metadata,
+    "EXBase66 scope",
+    "hebwlc-ebible — passageKeys OT:PSA:23:1-6 (acceptance-psalm23/evidence/scope.json)"
+  );
+  results.appendChild(metadata);
+};
+
+const appendExbase66NoBinding = (results) => {
+  const unavailable = document.createElement("p");
+  unavailable.textContent =
+    "No governed reference-to-passage-ID binding exists for this selection. The only binding in this repository covers Psalm 23:1-6 (eng-eng-asv text records; hebwlc-ebible EXBase66 scope). No passage ID, evidence, or relation was fabricated.";
+  results.appendChild(unavailable);
+};
+
+const appendExbase66TierBadge = (parent, tier) => {
+  const badge = document.createElement("span");
+  badge.className = `reader-exbase66-tier reader-exbase66-tier--${tier}`;
+  badge.textContent = EXBASE66_TIER[tier] ?? tier;
+  parent.appendChild(badge);
+};
+
+const appendExbase66LayerRow = (list, name, tiers, detail) => {
+  const item = document.createElement("li");
+
+  const nameSpan = document.createElement("span");
+  nameSpan.className = "reader-exbase66-layer-name";
+  nameSpan.textContent = name;
+  item.appendChild(nameSpan);
+
+  for (const tier of tiers) {
+    item.appendChild(document.createTextNode(" "));
+    appendExbase66TierBadge(item, tier);
+  }
+
+  if (detail) {
+    const detailSpan = document.createElement("span");
+    detailSpan.className = "reader-exbase66-tier-detail";
+    detailSpan.textContent = ` — ${detail}`;
+    item.appendChild(detailSpan);
+  }
+
+  list.appendChild(item);
+};
+
+const appendExbase66VerseBlock = (results, verse) => {
+  const data = EXBASE66_VERSE_EVIDENCE[verse];
+  if (!data) return;
+
+  const block = document.createElement("section");
+  block.className = "reader-exbase66-verse-block";
+
+  const heading = document.createElement("h5");
+  heading.textContent = `Verse evidence — ${data.canonicalKey} (passage ID ${data.passageId})`;
+  block.appendChild(heading);
+
+  const lexical = data.lexical;
+  const morphology = data.morphology;
+  const other = data.otherLayers;
+
+  const coreHeading = document.createElement("p");
+  coreHeading.textContent = "Core layers (exbase66Layers order):";
+  block.appendChild(coreHeading);
+
+  const coreList = document.createElement("ul");
+  coreList.className = "reader-exbase66-relations";
+  appendExbase66LayerRow(
+    coreList,
+    "lexical",
+    ["populated"],
+    `EXBase66 binding_records ${lexical.exbase66BindingRecords}; external token_records ${lexical.externalTokenRecords} (${lexical.externalSource}); comparison ${lexical.comparison}`
+  );
+  appendExbase66LayerRow(
+    coreList,
+    "morphology",
+    ["populated", "missing"],
+    `external records ${morphology.externalRecords} (populated); EXBase66 state ${morphology.exbase66State} (missing)`
+  );
+  appendExbase66LayerRow(
+    coreList,
+    "temporal",
+    [other.temporal === "NO_EVIDENCE" ? "missing" : "populated"],
+    `r3 state ${other.temporal}`
+  );
+  appendExbase66LayerRow(
+    coreList,
+    "events",
+    [other.events === "NO_EVIDENCE" ? "missing" : "populated"],
+    `r3 state ${other.events}`
+  );
+  appendExbase66LayerRow(
+    coreList,
+    "intertext",
+    [other.intertext === "NO_EVIDENCE" ? "missing" : "populated"],
+    `r3 state ${other.intertext}`
+  );
+  appendExbase66LayerRow(
+    coreList,
+    "variant_witness",
+    [other.variant_witness === "NO_EVIDENCE" ? "missing" : "populated"],
+    `r3 state ${other.variant_witness}`
+  );
+  appendExbase66LayerRow(
+    coreList,
+    "external_chronology",
+    ["validated", other.chronology === "NO_EVIDENCE" ? "missing" : "populated"],
+    `config chronologyDisposition.validatedGap=true (NO_CHRONOLOGY_TABLE_IN_SOURCE_SCHEMA); r3 state ${other.chronology}`
+  );
+  block.appendChild(coreList);
+
+  const externalHeading = document.createElement("p");
+  externalHeading.textContent = "External layers (externalCategories order):";
+  block.appendChild(externalHeading);
+
+  const externalList = document.createElement("ul");
+  externalList.className = "reader-exbase66-relations";
+  appendExbase66LayerRow(
+    externalList,
+    "lexical",
+    ["populated"],
+    `external token_records ${lexical.externalTokenRecords} (${lexical.externalSource}); EXBase66 binding_records ${lexical.exbase66BindingRecords}; comparison ${lexical.comparison}`
+  );
+  appendExbase66LayerRow(
+    externalList,
+    "morphology",
+    ["populated", "missing"],
+    `external records ${morphology.externalRecords} (populated); EXBase66 state ${morphology.exbase66State} (missing)`
+  );
+  appendExbase66LayerRow(
+    externalList,
+    "temporal",
+    [other.temporal === "NO_EVIDENCE" ? "missing" : "populated"],
+    `r3 state ${other.temporal}`
+  );
+  appendExbase66LayerRow(
+    externalList,
+    "events",
+    [other.events === "NO_EVIDENCE" ? "missing" : "populated"],
+    `r3 state ${other.events}`
+  );
+  appendExbase66LayerRow(
+    externalList,
+    "intertext",
+    [other.intertext === "NO_EVIDENCE" ? "missing" : "populated"],
+    `r3 state ${other.intertext}`
+  );
+  appendExbase66LayerRow(
+    externalList,
+    "variant_witness",
+    [other.variant_witness === "NO_EVIDENCE" ? "missing" : "populated"],
+    `r3 state ${other.variant_witness}`
+  );
+  appendExbase66LayerRow(
+    externalList,
+    "chronology",
+    ["validated", other.chronology === "NO_EVIDENCE" ? "missing" : "populated"],
+    `config chronologyDisposition.validatedGap=true (NO_CHRONOLOGY_TABLE_IN_SOURCE_SCHEMA); r3 state ${other.chronology}`
+  );
+  block.appendChild(externalList);
+
+  const cite = document.createElement("p");
+  cite.className = "reader-exbase66-source-cite";
+  cite.textContent = `Source: ${EXBASE66_MATRIX_SOURCE_PATH}`;
+  block.appendChild(cite);
+
+  results.appendChild(block);
+};
+
+const appendExbase66VerseEvidence = (results, selectedVerse = "") => {
+  const heading = document.createElement("h4");
+  heading.textContent = selectedVerse
+    ? "Verse-scoped evidence"
+    : "Verse-scoped evidence (each verse, no campaign-wide summing)";
+  results.appendChild(heading);
+
+  const note = document.createElement("p");
+  note.textContent = EXBASE66_TIER_LEGEND;
+  results.appendChild(note);
+
+  const versesToShow = selectedVerse
+    ? [Number(selectedVerse)]
+    : [...Array(EXBASE66_PSALM23_VERSE_COUNT)].map((_, index) => index + 1);
+
+  for (const verse of versesToShow) {
+    appendExbase66VerseBlock(results, verse);
+  }
+};
+
+const appendExbase66UnavailableSynthesis = (results) => {
+  const unavailable = document.createElement("p");
+  unavailable.className = "reader-exbase66-source-cite";
+  unavailable.textContent = "Colibri synthesis unavailable for this selection.";
+  results.appendChild(unavailable);
+};
+
+const appendExbase66ColibriSynthesis = (results, selectedVerse = "") => {
+  const heading = document.createElement("h4");
+  heading.textContent = "Colibri synthesis (existing artifact; ai_authority:false)";
+  results.appendChild(heading);
+
+  const note = document.createElement("p");
+  note.textContent = `Embedded verbatim from ${EXBASE66_COLIBRI_DIR} (SHA256SUMS manifest) — no live Colibri call, no new synthesis, no inference.`;
+  results.appendChild(note);
+
+  const versesToShow = selectedVerse
+    ? [Number(selectedVerse)]
+    : [...Array(EXBASE66_PSALM23_VERSE_COUNT)].map((_, index) => index + 1);
+
+  let rendered = 0;
+
+  for (const verse of versesToShow) {
+    const data = EXBASE66_COLIBRI_SYNTHESIS[verse];
+    if (!data) continue;
+
+    rendered += 1;
+
+    const block = document.createElement("section");
+    block.className = "reader-exbase66-colibri";
+
+    const blockHeading = document.createElement("h5");
+    blockHeading.textContent = `Colibri synthesis — ${data.canonicalKey}`;
+    block.appendChild(blockHeading);
+
+    const summary = document.createElement("p");
+    summary.textContent = data.summary;
+    block.appendChild(summary);
+
+    if (data.reflection) {
+      const reflection = document.createElement("p");
+      reflection.textContent = data.reflection;
+      block.appendChild(reflection);
+    }
+
+    const metadata = document.createElement("dl");
+    metadata.className = "reader-exbase66-metadata";
+    appendExbase66Definition(metadata, "ai_authority", String(data.aiAuthority));
+    appendExbase66Definition(metadata, "role", data.role);
+    appendExbase66Definition(metadata, "model", data.model);
+    appendExbase66Definition(metadata, "source_matrix_sha256", data.sourceMatrixSha256);
+    appendExbase66Definition(metadata, "artifact file", `${EXBASE66_COLIBRI_DIR}/${data.file}`);
+    appendExbase66Definition(metadata, "artifact sha256", data.fileSha256);
+    appendExbase66Definition(metadata, "SHA256SUMS", `${EXBASE66_COLIBRI_DIR}/SHA256SUMS`);
+    block.appendChild(metadata);
+
+    results.appendChild(block);
+  }
+
+  if (rendered === 0) {
+    appendExbase66UnavailableSynthesis(results);
+  }
+};
+
+const appendExbase66IntegrationNote = (results) => {
+  const details = document.createElement("details");
+  details.className = "reader-exbase66-diagnostics";
+
+  const summary = document.createElement("summary");
+  summary.textContent = "Integration status";
+  details.appendChild(summary);
+
+  const note = document.createElement("p");
+  note.textContent =
+    "This is a menus-only view: no search, no passage-ID entry, and no automatic inference. No live EXBase66 evidence endpoint is called. Verse selection is offered only where a verified governed binding exists — Psalm 23, verses 1-6 — and the verse menu stays disabled elsewhere because no verse list is exposed for those chapters.";
+  details.appendChild(note);
+
+  results.appendChild(details);
+};
+
+const renderExbase66Evidence = () => {
+  const results = readerExbase66Panel?.querySelector("[data-exbase66-results]");
+  if (!results) return;
+
+  const bookCode = readerExbase66Book?.value ?? "";
+  const chapter = readerExbase66Chapter?.value ?? "";
+  const verse = readerExbase66Verse?.value ?? "";
+
+  if (!bookCode || !chapter) {
+    setExbase66Message("Select a book and chapter before displaying evidence.");
+    return;
+  }
+
+  const bookLabel =
+    readerExbase66Book?.selectedOptions?.[0]?.textContent?.trim() || bookCode;
+  const reference = `${exbase66EditionID} — ${bookLabel} ${chapter}${
+    verse ? `:${verse}` : ""
+  }`;
+
+  results.replaceChildren();
+
+  const heading = document.createElement("h4");
+  heading.textContent = "Selected passage";
+  results.appendChild(heading);
+
+  const referenceLine = document.createElement("p");
+  referenceLine.textContent = `Reference: ${reference}`;
+  results.appendChild(referenceLine);
+
+  const isPsalm23 =
+    bookCode === EXBASE66_PSALM23_BOOK_CODE &&
+    chapter === EXBASE66_PSALM23_CHAPTER;
+
+  if (isPsalm23) {
+    appendExbase66Psalm23Binding(results, verse);
+    appendExbase66VerseEvidence(results, verse);
+    appendExbase66ColibriSynthesis(results, verse);
+  } else {
+    appendExbase66NoBinding(results);
+    appendExbase66UnavailableSynthesis(results);
+  }
+
+  appendExbase66IntegrationNote(results);
+
+  setExbase66Message("");
+};
+
+// Clear rendered evidence and message so a changed selection can never leave
+// stale evidence on screen until Display evidence is pressed again.
+const clearExbase66Results = () => {
+  const results = readerExbase66Panel?.querySelector("[data-exbase66-results]");
+  if (results) results.replaceChildren();
+  setExbase66Message("");
+};
+
+readerExbase66Book?.addEventListener("change", async () => {
+  const bookCode = readerExbase66Book.value;
+
+  clearExbase66Results();
+
+  if (readerExbase66Chapter) {
+    readerExbase66Chapter.disabled = true;
+    readerExbase66Chapter.replaceChildren(makeExbase66Option("Select book first"));
+  }
+
+  resetExbase66VerseMenu(false);
+  if (readerExbase66Display) readerExbase66Display.disabled = true;
+
+  if (!bookCode) return;
+
+  setExbase66Message("Loading EXBase66 chapters…");
+
+  try {
+    const response = await fetch(
+      `${readerApiPrefix()}/reader/chapters?edition=${encodeURIComponent(
+        exbase66EditionID
+      )}&book=${encodeURIComponent(bookCode)}`
+    );
+
+    if (!response.ok) throw new Error(`Chapters HTTP ${response.status}`);
+
+    const chapters = await response.json();
+
+    populateSelect(
+      readerExbase66Chapter,
+      chapters,
+      (chapter) => String(chapter),
+      (chapter) => String(chapter),
+      "Select chapter"
+    );
+
+    setExbase66Message("Select a chapter.");
+  } catch (error) {
+    console.error("EXBase66 chapter menu failed:", error);
+    readerExbase66Chapter.replaceChildren(
+      makeExbase66Option("Unable to load chapters")
+    );
+    readerExbase66Chapter.disabled = true;
+    setExbase66Message(
+      "Unable to load the EXBase66 chapter menu right now. No evidence was fabricated."
+    );
   }
 });
 
-readerExbase66Search?.addEventListener("click", () => {
-  void runExbase66Query();
+readerExbase66Chapter?.addEventListener("change", () => {
+  const chapter = readerExbase66Chapter.value;
+  const bookCode = readerExbase66Book?.value ?? "";
+
+  clearExbase66Results();
+
+  populateExbase66VerseMenu(bookCode, chapter);
+  if (readerExbase66Display) readerExbase66Display.disabled = !chapter;
+
+  if (!chapter) {
+    setExbase66Message("Select a chapter.");
+  } else if (
+    bookCode === EXBASE66_PSALM23_BOOK_CODE &&
+    chapter === EXBASE66_PSALM23_CHAPTER
+  ) {
+    setExbase66Message(
+      "Psalm 23 verses 1-6 have a verified binding; select a verse or display the whole chapter."
+    );
+  } else {
+    setExbase66Message(
+      `${EXBASE66_VERSE_UNAVAILABLE}; evidence will cover the whole chapter.`
+    );
+  }
+});
+
+readerExbase66Verse?.addEventListener("change", () => {
+  clearExbase66Results();
+});
+
+readerExbase66Display?.addEventListener("click", () => {
+  renderExbase66Evidence();
 });
 
 const syncReaderQuery = () => {
@@ -1325,12 +1889,15 @@ const restoreReaderSelectionState = () => {
   readerChapter.disabled = true;
 };
 
-const restoreReaderQueryState = async () => {
+const restoreReaderQueryState = async (
+  query = initialReaderQuery,
+  { force = false } = {}
+) => {
   if (!readerLanguage || !readerEdition || !readerBook || !readerChapter) return;
-  if (initialReaderQueryRestored) return;
+  if (initialReaderQueryRestored && !force) return;
 
   initialReaderQueryRestored = true;
-  const requestedMode = initialReaderQuery.get("readerMode");
+  const requestedMode = query.get("readerMode");
   if (readerMode && readerModeDescriptions[requestedMode]) {
     // Initial mode setup already happened before loadEditions().
     // Do not call setReaderModeState() here because it resets the
@@ -1344,10 +1911,8 @@ const restoreReaderQueryState = async () => {
     );
   }
 
-  if (requestedMode === "concordance") return;
-
   if (requestedMode === "century") {
-    const requestedCentury = initialReaderQuery.get("century");
+    const requestedCentury = query.get("century");
     if (
       requestedCentury &&
       [...readerLanguage.options].some(
@@ -1357,7 +1922,7 @@ const restoreReaderQueryState = async () => {
       readerLanguage.value = requestedCentury;
       populateEditionsForCentury(requestedCentury);
 
-      const requestedEdition = initialReaderQuery.get("edition");
+      const requestedEdition = query.get("edition");
       if (
         requestedEdition &&
         [...readerEdition.options].some(
@@ -1367,7 +1932,7 @@ const restoreReaderQueryState = async () => {
         readerEdition.value = requestedEdition;
         await loadBooks(requestedEdition);
 
-        const requestedBook = initialReaderQuery.get("book");
+        const requestedBook = query.get("book");
         if (
           requestedBook &&
           [...readerBook.options].some(
@@ -1377,7 +1942,7 @@ const restoreReaderQueryState = async () => {
           readerBook.value = requestedBook;
           await loadChapters(requestedEdition, requestedBook);
 
-          const requestedChapter = initialReaderQuery.get("chapter");
+          const requestedChapter = query.get("chapter");
           if (
             requestedChapter &&
             [...readerChapter.options].some(
@@ -1399,7 +1964,7 @@ const restoreReaderQueryState = async () => {
     return;
   }
 
-  const requestedLanguage = initialReaderQuery.get("language");
+  const requestedLanguage = query.get("language");
   if (
     requestedLanguage &&
     [...readerLanguage.options].some((option) => option.value === requestedLanguage)
@@ -1407,7 +1972,7 @@ const restoreReaderQueryState = async () => {
     readerLanguage.value = requestedLanguage;
     populateEditionsForLanguage(requestedLanguage);
 
-    const requestedEdition = initialReaderQuery.get("edition");
+    const requestedEdition = query.get("edition");
     if (
       requestedEdition &&
       [...readerEdition.options].some((option) => option.value === requestedEdition)
@@ -1415,7 +1980,7 @@ const restoreReaderQueryState = async () => {
       readerEdition.value = requestedEdition;
       await loadBooks(requestedEdition);
 
-      const requestedBook = initialReaderQuery.get("book");
+      const requestedBook = query.get("book");
       if (
         requestedBook &&
         [...readerBook.options].some((option) => option.value === requestedBook)
@@ -1423,7 +1988,7 @@ const restoreReaderQueryState = async () => {
         readerBook.value = requestedBook;
         await loadChapters(requestedEdition, requestedBook);
 
-        const requestedChapter = initialReaderQuery.get("chapter");
+        const requestedChapter = query.get("chapter");
         if (
           requestedChapter &&
           [...readerChapter.options].some(
@@ -1507,6 +2072,48 @@ readerShare?.addEventListener("click", async () => {
 
 if (readerLanguage && readerEdition && readerBook && readerChapter) {
   readerMode?.addEventListener("change", async () => {
+    const nextMode = readerMode.value;
+    const activeMode = readerMode.dataset.activeMode ?? "reader";
+    const previousMode = activeMode === "exbase66"
+      ? readerMode.dataset.returnMode ?? "reader"
+      : activeMode;
+
+    if (nextMode === "exbase66") {
+      if (activeMode !== "exbase66") readerMode.dataset.returnMode = activeMode;
+      readerMode.dataset.activeMode = nextMode;
+      setReaderModeState(nextMode);
+      syncReaderQuery();
+      return;
+    }
+
+    if (activeMode === "exbase66" && nextMode === previousMode) {
+      readerMode.dataset.activeMode = nextMode;
+      if (readerBase66Panel) readerBase66Panel.hidden = nextMode !== "base66";
+      if (readerExbase66Panel) readerExbase66Panel.hidden = true;
+      setReaderModeMessage(readerModeDescriptions[nextMode]);
+      setPrimaryReaderLabel(nextMode === "century" ? "Century" : "Language");
+      syncReaderQuery();
+      return;
+    }
+
+    // Reader and Base66 share the same Language / Bible-Translation / Book /
+    // Chapter menus, so a compatible view switch carries those selections over.
+    // Century owns its own century-selection semantics and EXBase66 keeps its
+    // own book / chapter / verse menus.
+    const preserveSelection =
+      (nextMode === "reader" || nextMode === "base66") &&
+      (previousMode === "reader" || previousMode === "base66");
+    const selection = preserveSelection
+      ? {
+          language: readerLanguage.value,
+          edition: readerEdition.value,
+          book: readerBook.value,
+          chapter: readerChapter.value,
+        }
+      : null;
+
+    readerMode.dataset.activeMode = nextMode;
+
     setPrimaryReaderLabel(
       readerMode.value === "century" ? "Century" : "Language"
     );
@@ -1520,12 +2127,21 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
     ) {
       await loadEditions();
     }
+
+    if (selection) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(selection)) {
+        if (value) params.set(key, value);
+      }
+      await restoreReaderQueryState(params, { force: true });
+    }
   });
 
   const requestedMode = initialReaderQuery.get("readerMode");
   if (requestedMode && readerModeDescriptions[requestedMode]) {
     readerMode.value = requestedMode;
   }
+  readerMode.dataset.activeMode = readerMode.value ?? "reader";
 
   setReaderModeState(readerMode?.value ?? "reader");
 
@@ -1570,36 +2186,11 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
   readerEdition.addEventListener("change", async () => {
     try {
       await loadBooks(readerEdition.value);
-      if (readerBase66Read) {
-        readerBase66Read.disabled =
-          readerMode?.value !== "base66" ||
-          !readerEdition.value ||
-          !readerBase66Reference?.value.trim();
-      }
     } catch (error) {
       setReaderMessage("Unable to load books.");
       console.error(error);
     }
     syncReaderQuery();
-  });
-
-  readerBase66Reference?.addEventListener("input", () => {
-    if (readerBase66Read) {
-      readerBase66Read.disabled =
-        readerMode?.value !== "base66" ||
-        !readerEdition?.value ||
-        !readerBase66Reference.value.trim();
-    }
-  });
-
-  readerBase66Reference?.addEventListener("keydown", async (event) => {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    await runBase66ReferenceQuery();
-  });
-
-  readerBase66Read?.addEventListener("click", async () => {
-    await runBase66ReferenceQuery();
   });
 
   readerBook.addEventListener("change", async () => {
@@ -1714,101 +2305,6 @@ if (bibleIndexClear && bibleIndexSearch) {
     bibleIndexSearch.focus();
   });
 }
-
-/* =====================================================================
-   SCRIPTUREi Three-Zone Peaceful Reader R1
-   Drives existing Reader/Base66/EXBase66 state through #reader-mode.
-   ===================================================================== */
-
-const readerBase66Toggle = document.querySelector("[data-reader-base66-toggle]");
-const readerExbase66Toggle = document.querySelector("[data-reader-exbase66-toggle]");
-const readerBase66Panel = document.querySelector("[data-reader-base66-panel]");
-const readerExbase66Panel = document.querySelector("[data-reader-exbase66-panel]");
-const readerContextTitle = document.querySelector("[data-reader-context-title]");
-const readerContextCloseButtons = document.querySelectorAll("[data-reader-context-close]");
-
-const setReaderContextPanel = async (context) => {
-  const next =
-    context === "base66"
-      ? "base66"
-      : context === "exbase66"
-        ? "exbase66"
-        : "reader";
-
-  if (readerBase66Panel) readerBase66Panel.hidden = next !== "base66";
-  if (readerExbase66Panel) readerExbase66Panel.hidden = next !== "exbase66";
-
-  readerBase66Toggle?.setAttribute(
-    "aria-expanded",
-    String(next === "base66")
-  );
-
-  readerExbase66Toggle?.setAttribute(
-    "aria-expanded",
-    String(next === "exbase66")
-  );
-
-  if (readerContextTitle) {
-    readerContextTitle.textContent =
-      next === "base66"
-        ? "BIBLE + BASE66"
-        : next === "exbase66"
-          ? "BIBLE + EXBASE66"
-          : "BIBLE";
-  }
-
-  if (!readerMode || readerMode.value === next) return;
-
-  readerMode.value = next;
-  readerMode.dispatchEvent(new Event("change", { bubbles: true }));
-};
-
-readerBase66Toggle?.addEventListener("click", () => {
-  void setReaderContextPanel(
-    readerBase66Panel?.hidden === false ? "reader" : "base66"
-  );
-});
-
-readerExbase66Toggle?.addEventListener("click", () => {
-  void setReaderContextPanel(
-    readerExbase66Panel?.hidden === false ? "reader" : "exbase66"
-  );
-});
-
-readerContextCloseButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    void setReaderContextPanel("reader");
-  });
-});
-
-const syncThreeZoneFromReaderMode = () => {
-  const mode = readerMode?.value ?? "reader";
-
-  if (readerBase66Panel) readerBase66Panel.hidden = mode !== "base66";
-  if (readerExbase66Panel) readerExbase66Panel.hidden = mode !== "exbase66";
-
-  readerBase66Toggle?.setAttribute(
-    "aria-expanded",
-    String(mode === "base66")
-  );
-
-  readerExbase66Toggle?.setAttribute(
-    "aria-expanded",
-    String(mode === "exbase66")
-  );
-
-  if (readerContextTitle) {
-    readerContextTitle.textContent =
-      mode === "base66"
-        ? "BIBLE + BASE66"
-        : mode === "exbase66"
-          ? "BIBLE + EXBASE66"
-          : "BIBLE";
-  }
-};
-
-readerMode?.addEventListener("change", syncThreeZoneFromReaderMode);
-syncThreeZoneFromReaderMode();
 
 /* =====================================================================
    SCRIPTUREi PUBLISHED BIBLE SHOWCASE R1

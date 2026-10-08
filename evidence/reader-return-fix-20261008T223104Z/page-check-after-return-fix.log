@@ -1,0 +1,20 @@
+
+> scripturei-public-site@0.2.0 check
+> npm run validate && npm run build
+
+
+> scripturei-public-site@0.2.0 validate
+> node scripts/validate-site.mjs
+
+STRUCTURAL_MATERIALIZATION_CHECK=PASS
+BACKGROUND_BYTES=135306
+BACKGROUND_BEHAVIOR=FIXED_VIEWPORT
+FOREGROUND_BEHAVIOR=DOCUMENT_SCROLL
+READER_STATE=DYNAMIC_INLINE
+READER_NAVIGATION=EDITION_BOOK_CHAPTER_DYNAMIC
+READER_NETWORK_POLICY=SAME_ORIGIN_PRODUCTION_LOCALHOST_DEV_ONLY
+
+> scripturei-public-site@0.2.0 build
+> node scripts/build.mjs
+
+Built dist/ and single-file local review R4
