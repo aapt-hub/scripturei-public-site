@@ -141,14 +141,38 @@
               class="reader-site-menu-trigger"
               data-reader-site-menu
               aria-label="Open SCRIPTUREi site navigation"
-              aria-expanded="false">☰ <span>SCRIPTUREi</span></button>
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="reader-site-menu">☰ <span>SCRIPTUREi</span></button>
+
+            <div
+              class="reader-switcher reader-ribbon-switcher"
+              role="group"
+              aria-label="Reader">
+              <button type="button" data-reader-select="bible" aria-pressed="true">Bible</button>
+              <button type="button" data-reader-select="century" aria-pressed="false">Century</button>
+              <button type="button" data-reader-select="base66" aria-pressed="false">Base66</button>
+              <button type="button" data-reader-select="exbase66" aria-pressed="false">EXBase66</button>
+            </div>
+
+            <div
+              id="reader-site-menu"
+              class="reader-site-menu"
+              data-reader-site-menu-panel
+              role="menu"
+              aria-label="SCRIPTUREi help menu"
+              hidden>
+              <button type="button" role="menuitem" data-reader-help="bible">Bible Help</button>
+              <button type="button" role="menuitem" data-reader-help="century">Century Help</button>
+              <button type="button" role="menuitem" data-reader-help="base66">Base66 Help</button>
+              <button type="button" role="menuitem" data-reader-help="exbase66">EXBase66 Help</button>
+            </div>
           </div>
 
-          <div class="reader-mode">
-            <label for="reader-mode">View</label>
-            <select id="reader-mode">
-              <option value="reader">Reader</option>
-              <option value="century">Century</option>
+          <div class="reader-mode-status">
+            <select id="reader-mode" class="reader-mode-state" hidden>
+              <option value="reader">Bible</option>
+              <option value="century">Bible — Century</option>
               <option value="base66">Base66</option>
               <option value="exbase66">EXBase66</option>
             </select>
@@ -206,6 +230,13 @@
             </div>
 
             <div id="reader-passage" class="reader-passage" aria-live="polite"></div>
+
+            <div
+              id="reader-help"
+              class="reader-help"
+              data-reader-help-panel
+              aria-live="polite"
+              hidden></div>
             </article>
 
             <aside
@@ -218,14 +249,23 @@
                 <strong>EXBase66</strong>
               </div>
               <p>Governed relationships, evidence, provenance, and read-only exploration.</p>
-            <p class="reader-exbase66-edition" data-exbase66-edition>
-              Governed English edition: eng-eng-asv — American Standard Version (1901)
-            </p>
             <div class="reader-exbase66-menus" data-exbase66-menus>
+              <label for="reader-exbase66-language">
+                Language
+                <select id="reader-exbase66-language" data-exbase66-language disabled>
+                  <option value="">Loading languages…</option>
+                </select>
+              </label>
+              <label for="reader-exbase66-edition">
+                Bible / Edition
+                <select id="reader-exbase66-edition" data-exbase66-edition-select disabled>
+                  <option value="">Select language first</option>
+                </select>
+              </label>
               <label for="reader-exbase66-book">
                 Book
                 <select id="reader-exbase66-book" data-exbase66-book disabled>
-                  <option value="">Loading books…</option>
+                  <option value="">Select edition first</option>
                 </select>
               </label>
               <label for="reader-exbase66-chapter">
@@ -242,6 +282,9 @@
               </label>
               <button type="button" data-exbase66-display disabled>Display evidence</button>
             </div>
+            <p class="reader-exbase66-edition" data-exbase66-edition>
+              Governed EXBase66 binding: English — eng-eng-asv (American Standard Version, 1901). No other language has a verified EXBase66 verse binding yet.
+            </p>
             <p data-exbase66-message role="status"></p>
             <div data-exbase66-results aria-live="polite"></div>
 

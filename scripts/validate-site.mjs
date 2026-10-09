@@ -167,36 +167,169 @@ assert.ok(
 );
 
 /*
- * Predictable navigation: the View dropdown is the single visible control for
- * the four reader modes, in the approved order, with no Concordance option and
- * no free-text Base66 passage input or separate Base66/EXBase66 toggle bars.
+ * Three distinct readers (superseding the single four-mode View dropdown):
+ * (a) Bible (First), Century (First, other view), Base66 (Second) and
+ *     EXBase66 (Third) are exposed as four segmented switcher buttons in the
+ *     top ribbon, on the same row as ☰ SCRIPTUREi, with no duplicate
+ *     Bible/Century button row;
+ * (b) the Bible and Century choices share the first reader's governed path;
+ * (c) EXBase66 keeps its own right-side panel (data-reader-exbase66-panel);
+ * (d) language menus show "native name (English name)" and sort A–Z by the
+ *     English language name, keeping distinct governed codes as own entries;
+ * (e) EXBase66 requires a verse: no chapter-wide evidence path.
+ * The hidden #reader-mode state holder retains the four governed values so
+ * query-string state and legacy ?readerMode= URLs keep working.
  */
-const readerModeSelectMatch = html.match(
-  /<select id="reader-mode"[^>]*>([\s\S]*?)<\/select>/
-);
-assert.ok(readerModeSelectMatch, "Reader View dropdown is missing");
-
-const readerModeOptions = [
-  ...readerModeSelectMatch[1].matchAll(
-    /<option value="([^"]+)">([^<]+)<\/option>/g
-  ),
-].map((match) => ({ value: match[1], label: match[2].trim() }));
-
-assert.deepEqual(
-  readerModeOptions,
-  [
-    { value: "reader", label: "Reader" },
-    { value: "century", label: "Century" },
-    { value: "base66", label: "Base66" },
-    { value: "exbase66", label: "EXBase66" },
-  ],
-  "View dropdown must offer exactly Reader, Century, Base66, EXBase66 in order"
+assert.ok(
+  html.includes("reader-ribbon-switcher"),
+  "Four-reader ribbon switcher control is missing"
 );
 
 assert.equal(
-  /concordance/i.test(readerModeSelectMatch[0]),
+  html.includes("data-reader-bible-choice"),
   false,
-  "Concordance must not be offered in the View dropdown"
+  "The separate Bible/Century button row must be removed from the ribbon"
+);
+
+// The four ribbon choices must sit on the same row, inside the same
+// .reader-peaceful-bar container as the ☰ SCRIPTUREi menu trigger.
+const peacefulBarMatch = html.match(
+  /<div class="reader-peaceful-bar">([\s\S]*?)<\/div>\s*<div class="reader-mode-status">/
+);
+assert.ok(
+  peacefulBarMatch && peacefulBarMatch[1].includes("data-reader-site-menu"),
+  "☰ SCRIPTUREi trigger must share the ribbon row"
+);
+assert.ok(
+  peacefulBarMatch &&
+    ["bible", "century", "base66", "exbase66"].every((key) =>
+      peacefulBarMatch[1].includes(`data-reader-select="${key}"`)
+    ),
+  "All four reader choices must share the ☰ SCRIPTUREi ribbon row"
+);
+
+for (const [key, label] of [
+  ["bible", "Bible"],
+  ["century", "Century"],
+  ["base66", "Base66"],
+  ["exbase66", "EXBase66"],
+]) {
+  const buttonMatch = html.match(
+    new RegExp(`data-reader-select="${key}"[^>]*>([^<]+)<`)
+  );
+  assert.ok(buttonMatch, `Reader switcher button missing: ${label}`);
+  assert.equal(
+    buttonMatch[1].trim(),
+    label,
+    `Reader switcher button label mismatch: ${label}`
+  );
+}
+
+const readerModeSelectMatch = html.match(
+  /<select id="reader-mode"[^>]*>([\s\S]*?)<\/select>/
+);
+assert.ok(readerModeSelectMatch, "Reader mode state holder is missing");
+assert.ok(
+  /id="reader-mode"[^<]*\bhidden\b/.test(readerModeSelectMatch[0]),
+  "Reader mode state holder must stay hidden behind the switcher"
+);
+
+const readerModeValues = [
+  ...readerModeSelectMatch[1].matchAll(/<option value="([^"]+)">/g),
+].map((match) => match[1]);
+
+assert.deepEqual(
+  readerModeValues,
+  ["reader", "century", "base66", "exbase66"],
+  "Reader mode state holder must retain reader/century/base66/exbase66"
+);
+
+assert.ok(
+  html.includes("data-reader-exbase66-panel"),
+  "EXBase66 right-side panel is missing"
+);
+
+/*
+ * Contextual Help: the ☰ SCRIPTUREi menu offers one topic per reader, each
+ * rendering inside the Read Scripture content area (data-reader-help-panel
+ * inside #reader-passage's article) with a Return to Scripture control that
+ * restores state without a network, AI, or enrichment call.
+ */
+assert.ok(
+  html.includes("data-reader-help-panel"),
+  "Contextual Help content area is missing"
+);
+
+for (const [topic, label] of [
+  ["bible", "Bible Help"],
+  ["century", "Century Help"],
+  ["base66", "Base66 Help"],
+  ["exbase66", "EXBase66 Help"],
+]) {
+  assert.ok(
+    html.includes(`data-reader-help="${topic}"`),
+    `Help menu item missing: ${label}`
+  );
+  assert.ok(
+    js.includes(`${topic}: {`) && js.includes(`title: "${label}"`),
+    `Help topic content missing: ${label}`
+  );
+}
+
+assert.ok(
+  js.includes("const returnToScripture") &&
+    js.includes("Return to Scripture") &&
+    js.includes("data-reader-help-return"),
+  "Return to Scripture control must restore the previous passage state"
+);
+
+const returnToScriptureBody = js.slice(
+  js.indexOf("const returnToScripture"),
+  js.indexOf("const setReaderSiteMenuOpen")
+);
+assert.ok(
+  returnToScriptureBody.includes("readerPassage.hidden = false") &&
+    returnToScriptureBody.includes("readerMode.value = snapshot.mode") &&
+    returnToScriptureBody.includes("readerLanguage.value = snapshot.language") &&
+    returnToScriptureBody.includes("readerEdition.value = snapshot.edition") &&
+    returnToScriptureBody.includes("readerBook.value = snapshot.book") &&
+    returnToScriptureBody.includes("readerChapter.value = snapshot.chapter"),
+  "Return to Scripture must restore passage, reader/view and selections"
+);
+assert.equal(
+  /\b(fetch|XMLHttpRequest|EventSource|WebSocket)\b/.test(returnToScriptureBody),
+  false,
+  "Opening or returning from Help must not trigger a network call"
+);
+
+assert.ok(
+  js.includes("${nativeName} (${englishName})"),
+  "Language menus must label entries as native name (English language name)"
+);
+assert.ok(
+  js.includes("const getLanguageSortKey") &&
+    js.includes("englishLanguageNames[code]") &&
+    js.includes('getLanguageSortKey(a.code).localeCompare(') &&
+    js.includes('getLanguageSortKey(b.code), "en"'),
+  "Language menus must sort alphabetically by the English language name"
+);
+
+assert.ok(
+  js.includes("EXBASE66_GOVERNED_EDITION_IDS") &&
+    js.includes('EXBASE66_GOVERNED_EDITION_IDS = new Set(["eng-eng-asv"])'),
+  "EXBase66 must offer only governed editions"
+);
+
+assert.ok(
+  js.includes("EXBASE66_VERSE_REQUIRED") &&
+    /if \(!verse \|\| readerExbase66Verse\?\.disabled\)/.test(js),
+  "EXBase66 must require a verse before displaying evidence"
+);
+
+assert.equal(
+  /whole chapter\./i.test(js),
+  false,
+  "EXBase66 must not offer a chapter-wide evidence path"
 );
 
 assert.equal(

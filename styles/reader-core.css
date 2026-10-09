@@ -517,6 +517,91 @@
   }
 }
 
+/* THREE_READERS_SWITCHER_R1
+   Three distinct readers (Bible / Base66 / EXBase66) reuse the existing
+   reader-mode visual identity as segmented buttons. The native select is a
+   hidden state holder so the existing query-string state keeps working. */
+.reader-mode-label {
+  color: var(--gold-200);
+  font-size: .9rem;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.reader-mode-state[hidden] {
+  display: none !important;
+}
+
+.reader-switcher {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: .8rem;
+  overflow: hidden;
+  background: rgba(255, 255, 255, .06);
+}
+
+.reader-switcher button {
+  min-height: 3rem;
+  padding: 0 .9rem;
+  border: 0;
+  border-inline-start: 1px solid var(--line-soft);
+  background: transparent;
+  color: var(--white);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reader-switcher button:first-child {
+  border-inline-start: 0;
+}
+
+.reader-switcher button[aria-pressed="true"] {
+  background: rgba(255, 215, 132, .22);
+  color: var(--gold-200);
+}
+
+.reader-switcher button:focus-visible {
+  outline: 3px solid var(--gold-300);
+  outline-offset: 2px;
+}
+
+.reader-bible-mode {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  gap: .35rem;
+  margin-bottom: .2rem;
+}
+
+.reader-bible-mode[hidden] {
+  display: none !important;
+}
+
+.reader-bible-mode button {
+  min-height: 2.2rem;
+  padding: 0 .7rem;
+  border: 1px solid var(--line-soft);
+  border-radius: .5rem;
+  background: rgba(255, 255, 255, .06);
+  color: var(--white);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reader-bible-mode button[aria-pressed="true"] {
+  background: rgba(255, 215, 132, .22);
+  color: var(--gold-200);
+}
+
+.reader-bible-mode button:focus-visible {
+  outline: 3px solid var(--gold-300);
+  outline-offset: 2px;
+}
+
 /* =====================================================================
    BASE66_LANGUAGE_EDITION_PASSAGE_MENU_R1
    Presentation-only query layer over the existing reader controls.
@@ -1529,3 +1614,136 @@ body.scripturei-gdisciple-family-r2
   font-weight: 700;
   color: #6f212a;
 }
+
+/* =====================================================================
+   READER RIBBON + CONTEXTUAL HELP (R1)
+   ☰ SCRIPTUREi and the four reader choices share one wrapping row; the site
+   menu and the Help panel stay readable and keyboard-operable at desktop and
+   mobile widths.
+   ===================================================================== */
+
+.reader-peaceful-bar {
+  position: relative;
+  row-gap: 0.5rem;
+}
+
+.reader-ribbon-switcher {
+  justify-self: end;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+.reader-ribbon-switcher button {
+  white-space: nowrap;
+}
+
+.reader-site-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 30;
+  display: grid;
+  gap: 0.2rem;
+  min-width: 12rem;
+  padding: 0.4rem;
+  border: 1px solid rgba(111, 33, 42, 0.25);
+  border-radius: 0.5rem;
+  background: #fffdf8;
+  box-shadow: 0 0.7rem 1.6rem rgba(31, 20, 12, 0.28);
+}
+
+.reader-site-menu[hidden] {
+  display: none !important;
+}
+
+.reader-site-menu button {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.6rem;
+  border: 0 !important;
+  border-radius: 0.35rem;
+  background: transparent !important;
+  color: #2a1a12 !important;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.reader-site-menu button:hover,
+.reader-site-menu button:focus-visible {
+  background: rgba(111, 33, 42, 0.12) !important;
+  outline: 2px solid #6f212a;
+  outline-offset: -2px;
+}
+
+.reader-help {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.4rem;
+}
+
+.reader-help[hidden] {
+  display: none !important;
+}
+
+.reader-help h3 {
+  margin: 0;
+  color: #6f212a;
+}
+
+.reader-help p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.reader-help .reader-help-return {
+  justify-self: start;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .reader-peaceful-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .reader-ribbon-switcher {
+    width: 100%;
+    justify-self: start;
+  }
+
+  .reader-ribbon-switcher button {
+    flex: 1 1 auto;
+  }
+}
+
+/* SCRIPTUREi CONTRAST FIX R1 */
+
+/* Help panel: remove inherited transparency */
+[class*="reader-help"],
+[class*="help-content"],
+[class*="help-panel"] {
+  opacity: 1 !important;
+}
+
+/* Help text: solid black */
+[class*="reader-help"] :is(p, li, span, small, strong, em),
+[class*="help-content"] :is(p, li, span, small, strong, em),
+[class*="help-panel"] :is(p, li, span, small, strong, em) {
+  color: #111111 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+/* Scripture citations: solid black */
+:is(.inline-reader, .reader-text)
+:is(cite, [class*="citation"], [id*="citation"]),
+:is(.inline-reader, .reader-text)
+:is(cite, [class*="citation"], [id*="citation"]) * {
+  color: #111111 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #111111 !important;
+}
+
+/* END SCRIPTUREi CONTRAST FIX R1 */

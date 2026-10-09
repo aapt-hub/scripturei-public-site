@@ -54,9 +54,11 @@ const setReaderModeState = (mode) => {
   const description = readerModeDescriptions[mode] ?? readerModeDescriptions.reader;
 
   setReaderModeMessage(description);
+  syncReaderSwitcherUI(mode);
 
-  // The View control is the single navigation control for the three reader
-  // modes; it solely drives which context panel is visible.
+  // The three-reader switcher drives which context panel is visible; the
+  // underlying #reader-mode state holder keeps query-string state and legacy
+  // ?readerMode= URLs working.
   if (readerBase66Panel) readerBase66Panel.hidden = mode !== "base66";
   if (readerExbase66Panel) readerExbase66Panel.hidden = mode !== "exbase66";
 
@@ -99,7 +101,10 @@ const readerExbase66Book = document.querySelector("[data-exbase66-book]");
 const readerExbase66Chapter = document.querySelector("[data-exbase66-chapter]");
 const readerExbase66Verse = document.querySelector("[data-exbase66-verse]");
 const readerExbase66Display = document.querySelector("[data-exbase66-display]");
-const readerExbase66Edition = document.querySelector("[data-exbase66-edition]");
+const readerExbase66Language = document.querySelector("[data-exbase66-language]");
+const readerExbase66EditionSelect = document.querySelector(
+  "[data-exbase66-edition-select]"
+);
 const readerExbase66Panel = document.querySelector("[data-reader-exbase66-panel]");
 const readerMessage = document.querySelector("#reader-message");
 const readerPassage = document.querySelector("#reader-passage");
@@ -108,6 +113,36 @@ const readerFontIncrease = document.querySelector("[data-reader-font-increase]")
 const readerPrint = document.querySelector("[data-reader-print]");
 const readerDownload = document.querySelector("[data-reader-download]");
 const readerShare = document.querySelector("[data-reader-share]");
+
+// THREE_READERS_SWITCHER_R1: the visible segmented controls in the top ribbon
+// drive the hidden #reader-mode state holder, so query-string state and legacy
+// ?readerMode= URLs keep working. Bible and Century are two views of the first
+// reader; Base66 is the second reader and EXBase66 the third.
+const readerSwitcherButtons = document.querySelectorAll("[data-reader-select]");
+
+const readerTopSwitcherKey = (mode) => (mode === "reader" ? "bible" : mode);
+
+// Reflects the current readerMode value onto the visible ribbon switcher so
+// exactly one control is aria-pressed (Bible and Century stay distinct).
+const syncReaderSwitcherUI = (mode) => {
+  const key = readerTopSwitcherKey(mode);
+  readerSwitcherButtons.forEach((button) => {
+    button.setAttribute(
+      "aria-pressed",
+      String(button.dataset.readerSelect === key)
+    );
+  });
+};
+
+const requestReaderMode = (mode) => {
+  if (!readerMode) return;
+  if (readerMode.value === mode) {
+    syncReaderSwitcherUI(mode);
+    return;
+  }
+  readerMode.value = mode;
+  readerMode.dispatchEvent(new Event("change"));
+};
 
 let currentPassage = null;
 let currentCitation = null;
@@ -277,7 +312,9 @@ const getLanguageName = (code) => {
     return `${nativeName} (${englishName})`;
   }
 
-  return nativeName ?? englishName ?? code.toUpperCase();
+  // No known English name: fall back honestly to the code itself, never a
+  // fabricated language name.
+  return nativeName ?? englishName ?? code;
 };
 
 const romanCenturies = [
@@ -418,11 +455,21 @@ const setPrimaryReaderLabel = (text) => {
   marker.textContent = text;
 };
 
+// Language menus are ordered A–Z by the ENGLISH language name, never by the
+// displayed (possibly native-script) label. Distinct governed codes stay as
+// their own entries even when two codes render the same label; a code with no
+// known English name falls back honestly to the code itself.
+const getLanguageSortKey = (code) => englishLanguageNames[code] ?? code;
+
 const getLanguagesFromEditions = (editions) => {
   const codes = [...new Set(editions.map(getLanguageCode).filter(Boolean))];
   return codes
     .map((code) => ({ code, name: getLanguageName(code) }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) =>
+      getLanguageSortKey(a.code).localeCompare(getLanguageSortKey(b.code), "en", {
+        sensitivity: "base",
+      })
+    );
 };
 
 const populateEditionsForLanguage = (languageCode) => {
@@ -552,8 +599,10 @@ const getReaderAccessUrl = () => {
   return `${window.location.origin}/${query ? `?${query}` : ""}`;
 };
 
-const getVerseRangeFromPassage = () => {
-  const verses = currentPassage?.Verses ?? currentPassage?.verses ?? [];
+const getVerseRangeFromPassage = (passage = currentPassage, explicitRange = "") => {
+  if (explicitRange) return String(explicitRange);
+
+  const verses = passage?.Verses ?? passage?.verses ?? [];
   if (!Array.isArray(verses) || verses.length === 0) return "";
 
   const first = getVerseLabel(verses[0]);
@@ -564,12 +613,32 @@ const getVerseRangeFromPassage = () => {
   return `${first}–${last}`;
 };
 
-const formatTurabianWebCitation = () => {
-  if (!currentPassage) return "";
+// Builds the citation for any reader from the governed citation payload. A
+// localized preformatted citation supplied by the Reader API is preferred so
+// the citation stays in the selected Bible's language; otherwise the citation
+// is assembled from edition-specific metadata. Returns "" when no metadata is
+// available so callers can state that explicitly instead of substituting
+// English details.
+const formatTurabianWebCitation = (
+  passage = currentPassage,
+  citation = currentCitation,
+  { verseRange = "", accessUrl = "" } = {}
+) => {
+  if (!passage) return "";
+
+  const preformatted =
+    citation?.text ??
+    citation?.formatted ??
+    citation?.citation ??
+    citation?.turabian ??
+    "";
+  if (typeof preformatted === "string" && preformatted.trim()) {
+    return preformatted.trim();
+  }
 
   const rawBook =
-    currentPassage.BookCode ??
-    currentPassage.bookCode ??
+    passage.BookCode ??
+    passage.bookCode ??
     "";
 
   const book =
@@ -577,29 +646,29 @@ const formatTurabianWebCitation = () => {
     rawBook;
 
   const chapter =
-    currentPassage.Chapter ??
-    currentPassage.chapter ??
+    passage.Chapter ??
+    passage.chapter ??
     "";
 
-  const verseRange = getVerseRangeFromPassage();
+  const range = getVerseRangeFromPassage(passage, verseRange);
 
   const editionTitle =
-    currentCitation?.editionTitle ??
-    currentCitation?.EditionTitle ??
+    citation?.editionTitle ??
+    citation?.EditionTitle ??
     "";
 
   const editionAbbreviation =
-    currentCitation?.editionAbbreviation ??
-    currentCitation?.EditionAbbreviation ??
+    citation?.editionAbbreviation ??
+    citation?.EditionAbbreviation ??
     "";
 
   const accessedDate = formatAccessedDate(
-    currentCitation?.accessedDate ??
-    currentCitation?.AccessedDate ??
+    citation?.accessedDate ??
+    citation?.AccessedDate ??
     ""
   );
 
-  const accessUrl = getReaderAccessUrl();
+  const url = accessUrl || getReaderAccessUrl();
 
   let version = editionTitle;
   if (editionAbbreviation) {
@@ -610,7 +679,7 @@ const formatTurabianWebCitation = () => {
 
   const reference =
     book && chapter
-      ? `${book} ${chapter}${verseRange ? `:${verseRange}` : ""}`
+      ? `${book} ${chapter}${range ? `:${range}` : ""}`
       : "";
 
   const parts = [reference, version].filter(Boolean);
@@ -619,11 +688,24 @@ const formatTurabianWebCitation = () => {
     parts.push(`accessed ${accessedDate}`);
   }
 
-  if (accessUrl) {
-    parts.push(accessUrl);
+  if (url) {
+    parts.push(url);
   }
 
   return parts.length ? `${parts.join(", ")}.` : "";
+};
+
+// Renders the current citation at the BOTTOM of a reader's results area. When
+// no governed metadata exists an explicit statement is shown rather than
+// silently substituting English bibliographic details.
+const CITATION_UNAVAILABLE = "Citation metadata unavailable for this edition.";
+
+const appendCitationTo = (container, citationText) => {
+  if (!container) return;
+  const paragraph = document.createElement("p");
+  paragraph.className = "reader-citation";
+  paragraph.textContent = citationText || CITATION_UNAVAILABLE;
+  container.appendChild(paragraph);
 };
 
 const passageAsText = () => {
@@ -933,6 +1015,12 @@ const loadPassage = async (editionID, bookCode, chapter) => {
         originalLine.dir = "auto";
         originalLine.textContent = originalText;
         verseBlock.appendChild(originalLine);
+      } else {
+        // Missing layers are stated explicitly rather than left silent.
+        const originalNote = document.createElement("p");
+        originalNote.className = "reader-base66-layer-note";
+        originalNote.textContent = "Original-language layer unavailable for this verse.";
+        verseBlock.appendChild(originalNote);
       }
 
       const strongValues = getVerseLexical(verse)
@@ -944,6 +1032,11 @@ const loadPassage = async (editionID, bookCode, chapter) => {
         strongLine.className = "reader-base66-strong";
         strongLine.textContent = `Strong: ${strongValues.join(" · ")}`;
         verseBlock.appendChild(strongLine);
+      } else {
+        const strongNote = document.createElement("p");
+        strongNote.className = "reader-base66-layer-note";
+        strongNote.textContent = "Strong's layer unavailable for this verse.";
+        verseBlock.appendChild(strongNote);
       }
     }
 
@@ -952,16 +1045,10 @@ const loadPassage = async (editionID, bookCode, chapter) => {
 
   readerPassage.appendChild(verses);
 
-    if (citation) {
-      const citationText = formatTurabianWebCitation();
-
-      if (citationText) {
-        const citationParagraph = document.createElement("p");
-        citationParagraph.className = "reader-citation";
-        citationParagraph.textContent = citationText;
-        readerPassage.appendChild(citationParagraph);
-      }
-    }
+  // Citation always renders at the BOTTOM of the reading area. When governed
+  // metadata is missing an explicit statement is shown rather than English
+  // substitution or silence.
+  appendCitationTo(readerPassage, formatTurabianWebCitation());
 
   readerPassage.dir =
     editionID === "hebwlc-ebible" ? "rtl" : "ltr";
@@ -979,10 +1066,25 @@ const loadPassage = async (editionID, bookCode, chapter) => {
    the evidence area reports that honestly and fabricates no values.
    ===================================================================== */
 
+// Legacy default governed edition, retained for the static markup note.
 const exbase66EditionID = "eng-eng-asv";
+
+// Only editions actually governed for EXBase66 display are offered. In this
+// repository the verified verse-text binding covers eng-eng-asv (Psalm 23:1-6
+// text records, hebwlc-ebible EXBase66 scope); no other language has a verified
+// EXBase66 verse binding, so the menu is not padded with unverified editions.
+const EXBASE66_GOVERNED_EDITION_IDS = new Set(["eng-eng-asv"]);
+
 const EXBASE66_VERSE_UNAVAILABLE =
-  "Verse selection isn't available for this chapter";
+  "No verified EXBase66 verse binding exists for this selection";
+
+// One verse per query: the chapter-wide evidence path is not offered at all.
+const EXBASE66_VERSE_REQUIRED =
+  "Select a verse before displaying evidence. EXBase66 displays one verse per query; there is no chapter-wide view.";
 let exbase66BooksLoaded = false;
+let exbase66MenusLoaded = false;
+let exbase66Language = "";
+let exbase66Edition = "";
 
 const setExbase66Message = (message) => {
   const node = readerExbase66Panel?.querySelector("[data-exbase66-message]");
@@ -994,6 +1096,24 @@ const makeExbase66Option = (text) => {
   option.value = "";
   option.textContent = text;
   return option;
+};
+
+const fillExbase66Select = (select, placeholder, entries, selectedValue = "") => {
+  if (!select) return;
+
+  const options = [makeExbase66Option(placeholder)];
+  for (const entry of entries) {
+    const option = document.createElement("option");
+    option.value = entry.value;
+    option.textContent = entry.label;
+    options.push(option);
+  }
+
+  select.replaceChildren(...options);
+  select.disabled = entries.length === 0;
+  select.value = entries.some((entry) => entry.value === selectedValue)
+    ? selectedValue
+    : "";
 };
 
 const resetExbase66VerseMenu = (chapterSelected) => {
@@ -1015,15 +1135,16 @@ const populateExbase66VerseMenu = (bookCode, chapter) => {
     bookCode === EXBASE66_PSALM23_BOOK_CODE &&
     chapter === EXBASE66_PSALM23_CHAPTER;
 
-  // Only the verified Psalm 23 binding is offered; every other selection keeps
-  // the verse menu disabled because no governed verse list exists for it and no
-  // verse-list endpoint is exposed. Nothing is inferred or fabricated.
+  // Only the verified Psalm 23 binding offers verses; every other selection
+  // keeps the verse menu disabled because no governed verse list exists for it
+  // and no verse-list endpoint is exposed. Nothing is inferred or fabricated,
+  // and no chapter-wide display is offered anywhere.
   if (!isPsalm23) {
     resetExbase66VerseMenu(Boolean(chapter));
     return;
   }
 
-  const options = [makeExbase66Option("Select verse (optional)")];
+  const options = [makeExbase66Option("Select verse")];
 
   for (let verse = 1; verse <= EXBASE66_PSALM23_VERSE_COUNT; verse += 1) {
     const option = document.createElement("option");
@@ -1036,22 +1157,59 @@ const populateExbase66VerseMenu = (bookCode, chapter) => {
   readerExbase66Verse.disabled = false;
 };
 
-const updateExbase66EditionLabel = () => {
-  if (!readerExbase66Edition) return;
-
-  const edition = readerEditions.find(
-    (item) => getEditionID(item) === exbase66EditionID
+// Governed edition lookup for EXBase66. Only editions in
+// EXBASE66_GOVERNED_EDITION_IDS are ever offered; when the catalog is
+// unavailable the single verified governed edition is used as an honest
+// fallback rather than padding the menu with unverified editions.
+const getExbase66GovernedEditions = () =>
+  readerEditions.filter((item) =>
+    EXBASE66_GOVERNED_EDITION_IDS.has(getEditionID(item))
   );
-  const name = edition ? getEditionName(edition) : "";
 
-  if (!name || name === exbase66EditionID) return;
+const getExbase66EditionEntries = (languageCode = "") => {
+  const governed = getExbase66GovernedEditions().filter(
+    (edition) => !languageCode || getLanguageCode(edition) === languageCode
+  );
 
-  readerExbase66Edition.textContent =
-    `Governed English edition: ${exbase66EditionID} — ${name}`;
+  const entries = governed.map((edition) => ({
+    value: getEditionID(edition),
+    label: getEditionName(edition),
+  }));
+
+  const isFallbackLanguage = !languageCode || languageCode === "eng";
+  if (entries.length === 0 && isFallbackLanguage) {
+    entries.push({
+      value: exbase66EditionID,
+      label: "American Standard Version (1901)",
+    });
+  }
+
+  return entries;
+};
+
+const populateExbase66EditionMenus = () => {
+  if (!readerExbase66Language || !readerExbase66EditionSelect) return;
+
+  const governed = getExbase66GovernedEditions();
+  const languages = governed.length
+    ? getLanguagesFromEditions(governed)
+    : [{ code: "eng", name: getLanguageName("eng") }];
+
+  fillExbase66Select(
+    readerExbase66Language,
+    "Select language",
+    languages.map((language) => ({ value: language.code, label: language.name })),
+    exbase66Language
+  );
+
+  readerExbase66EditionSelect.replaceChildren(
+    makeExbase66Option("Select language first")
+  );
+  readerExbase66EditionSelect.disabled = true;
 };
 
 const loadExbase66Books = async () => {
-  if (!readerExbase66Book) return;
+  if (!readerExbase66Book || !exbase66Edition) return;
 
   readerExbase66Book.disabled = true;
   setExbase66Message("Loading EXBase66 books…");
@@ -1059,7 +1217,7 @@ const loadExbase66Books = async () => {
   try {
     const response = await fetch(
       `${readerApiPrefix()}/reader/books?edition=${encodeURIComponent(
-        exbase66EditionID
+        exbase66Edition
       )}`
     );
 
@@ -1076,7 +1234,7 @@ const loadExbase66Books = async () => {
     );
 
     setExbase66Message(
-      "Select a book, then a chapter. Evidence is displayed only when you press the Display-evidence button."
+      "Select a book, then a chapter and a verse. Evidence is displayed only when you press the Display-evidence button."
     );
   } catch (error) {
     exbase66BooksLoaded = false;
@@ -1089,33 +1247,89 @@ const loadExbase66Books = async () => {
   }
 };
 
+// Best-effort restoration of EXBase66's own selections from a ?readerMode=exbase66
+// URL, so shared/cited links reopen the same one-verse query.
+const restoreExbase66QueryState = async () => {
+  if (!readerExbase66Language || !readerExbase66EditionSelect) return;
+
+  const requestedEdition = initialReaderQuery.get("edition");
+  const requestedLanguage =
+    initialReaderQuery.get("language") ||
+    (requestedEdition ? requestedEdition.split("-")[0] : "");
+
+  const languageOption = [...readerExbase66Language.options].find(
+    (option) => option.value === requestedLanguage
+  );
+  if (!languageOption) return;
+
+  readerExbase66Language.value = requestedLanguage;
+  handleExbase66LanguageChange();
+
+  const editionOption = [...readerExbase66EditionSelect.options].find(
+    (option) => option.value === requestedEdition
+  );
+  if (!editionOption) return;
+
+  readerExbase66EditionSelect.value = requestedEdition;
+  await handleExbase66EditionChange();
+
+  const requestedBook = initialReaderQuery.get("book");
+  const requestedChapter = initialReaderQuery.get("chapter");
+  const requestedVerse = initialReaderQuery.get("verse");
+  if (!requestedBook || !requestedChapter) return;
+
+  const bookOption = [...readerExbase66Book.options].find(
+    (option) => option.value === requestedBook
+  );
+  if (!bookOption) return;
+
+  readerExbase66Book.value = requestedBook;
+  await handleExbase66BookChange();
+
+  const chapterOption = [...readerExbase66Chapter.options].find(
+    (option) => option.value === requestedChapter
+  );
+  if (!chapterOption) return;
+
+  readerExbase66Chapter.value = requestedChapter;
+  handleExbase66ChapterChange();
+
+  if (!requestedVerse) return;
+
+  const verseOption = [...readerExbase66Verse.options].find(
+    (option) => option.value === requestedVerse
+  );
+  if (!verseOption) return;
+
+  readerExbase66Verse.value = requestedVerse;
+  handleExbase66VerseChange();
+};
+
 const loadExbase66Editions = async () => {
-  if (readerEditions.length > 0) {
-    updateExbase66EditionLabel();
-    return;
+  if (readerEditions.length === 0) {
+    try {
+      readerEditions = await fetchReaderEditions();
+    } catch (error) {
+      console.error("EXBase66 edition lookup failed:", error);
+      readerEditions = [];
+    }
   }
 
-  try {
-    readerEditions = await fetchReaderEditions();
-  } catch (error) {
-    console.error("EXBase66 edition lookup failed:", error);
-    readerEditions = [];
-  }
-
-  // Falls back to the static governed label already present in the markup
+  // Falls back to the static governed menus already present in the markup
   // when the editions catalog is unavailable (no live Reader API).
-  updateExbase66EditionLabel();
+  populateExbase66EditionMenus();
+
+  if (initialReaderQuery.get("readerMode") === "exbase66") {
+    await restoreExbase66QueryState();
+  }
 };
 
 const ensureExbase66MenusLoaded = () => {
-  // The edition label needs the editions catalog, but the main Reader menus
-  // must stay untouched in EXBase66 mode, so load editions for lookup only.
+  // The governed edition lookup must not touch the main Reader menus, which
+  // stay untouched while EXBase66 is open.
+  if (exbase66MenusLoaded) return;
+  exbase66MenusLoaded = true;
   void loadExbase66Editions();
-
-  if (exbase66BooksLoaded || !readerExbase66Book) return;
-
-  exbase66BooksLoaded = true;
-  void loadExbase66Books();
 };
 
 // Governed reference-to-passage-ID binding present in the repository: only the
@@ -1375,27 +1589,19 @@ const appendExbase66Definition = (parent, label, value) => {
   parent.append(term, description);
 };
 
-const appendExbase66Psalm23Binding = (results, selectedVerse = "") => {
+const appendExbase66Psalm23Binding = (results, selectedVerse) => {
   const intro = document.createElement("p");
-  intro.textContent = selectedVerse
-    ? `Governed reference-to-passage-ID binding for Psalm 23, verse ${selectedVerse} (the campaign's verified verse scope):`
-    : "Governed reference-to-passage-ID binding found for this chapter (Psalm 23, verses 1-6 — the campaign's selected-passage scope):";
+  intro.textContent = `Governed reference-to-passage-ID binding for Psalm 23, verse ${selectedVerse} (the campaign's verified verse scope):`;
   results.appendChild(intro);
 
   const bindings = document.createElement("ul");
   bindings.className = "reader-exbase66-relations";
 
-  const versesToShow = selectedVerse
-    ? [Number(selectedVerse)]
-    : [...Array(EXBASE66_PSALM23_VERSE_COUNT)].map((_, index) => index + 1);
-
-  for (const verse of versesToShow) {
-    const item = document.createElement("li");
-    item.textContent = `OT:PSA:23:${verse} — passage ID ${
-      EXBASE66_PSALM23_FIRST_PASSAGE_ID + verse - 1
-    }`;
-    bindings.appendChild(item);
-  }
+  const item = document.createElement("li");
+  item.textContent = `OT:PSA:23:${selectedVerse} — passage ID ${
+    EXBASE66_PSALM23_FIRST_PASSAGE_ID + Number(selectedVerse) - 1
+  }`;
+  bindings.appendChild(item);
 
   results.appendChild(bindings);
 
@@ -1578,24 +1784,17 @@ const appendExbase66VerseBlock = (results, verse) => {
   results.appendChild(block);
 };
 
-const appendExbase66VerseEvidence = (results, selectedVerse = "") => {
+const appendExbase66VerseEvidence = (results, selectedVerse) => {
   const heading = document.createElement("h4");
-  heading.textContent = selectedVerse
-    ? "Verse-scoped evidence"
-    : "Verse-scoped evidence (each verse, no campaign-wide summing)";
+  heading.textContent = "Verse-scoped evidence";
   results.appendChild(heading);
 
   const note = document.createElement("p");
   note.textContent = EXBASE66_TIER_LEGEND;
   results.appendChild(note);
 
-  const versesToShow = selectedVerse
-    ? [Number(selectedVerse)]
-    : [...Array(EXBASE66_PSALM23_VERSE_COUNT)].map((_, index) => index + 1);
-
-  for (const verse of versesToShow) {
-    appendExbase66VerseBlock(results, verse);
-  }
+  // Exactly the one selected verse: evidence is never summed across verses.
+  appendExbase66VerseBlock(results, Number(selectedVerse));
 };
 
 const appendExbase66UnavailableSynthesis = (results) => {
@@ -1605,7 +1804,7 @@ const appendExbase66UnavailableSynthesis = (results) => {
   results.appendChild(unavailable);
 };
 
-const appendExbase66ColibriSynthesis = (results, selectedVerse = "") => {
+const appendExbase66ColibriSynthesis = (results, selectedVerse) => {
   const heading = document.createElement("h4");
   heading.textContent = "Colibri synthesis (existing artifact; ai_authority:false)";
   results.appendChild(heading);
@@ -1614,52 +1813,43 @@ const appendExbase66ColibriSynthesis = (results, selectedVerse = "") => {
   note.textContent = `Embedded verbatim from ${EXBASE66_COLIBRI_DIR} (SHA256SUMS manifest) — no live Colibri call, no new synthesis, no inference.`;
   results.appendChild(note);
 
-  const versesToShow = selectedVerse
-    ? [Number(selectedVerse)]
-    : [...Array(EXBASE66_PSALM23_VERSE_COUNT)].map((_, index) => index + 1);
+  // Only the one selected verse's existing synthesis artifact is shown.
+  const data = EXBASE66_COLIBRI_SYNTHESIS[Number(selectedVerse)];
 
-  let rendered = 0;
-
-  for (const verse of versesToShow) {
-    const data = EXBASE66_COLIBRI_SYNTHESIS[verse];
-    if (!data) continue;
-
-    rendered += 1;
-
-    const block = document.createElement("section");
-    block.className = "reader-exbase66-colibri";
-
-    const blockHeading = document.createElement("h5");
-    blockHeading.textContent = `Colibri synthesis — ${data.canonicalKey}`;
-    block.appendChild(blockHeading);
-
-    const summary = document.createElement("p");
-    summary.textContent = data.summary;
-    block.appendChild(summary);
-
-    if (data.reflection) {
-      const reflection = document.createElement("p");
-      reflection.textContent = data.reflection;
-      block.appendChild(reflection);
-    }
-
-    const metadata = document.createElement("dl");
-    metadata.className = "reader-exbase66-metadata";
-    appendExbase66Definition(metadata, "ai_authority", String(data.aiAuthority));
-    appendExbase66Definition(metadata, "role", data.role);
-    appendExbase66Definition(metadata, "model", data.model);
-    appendExbase66Definition(metadata, "source_matrix_sha256", data.sourceMatrixSha256);
-    appendExbase66Definition(metadata, "artifact file", `${EXBASE66_COLIBRI_DIR}/${data.file}`);
-    appendExbase66Definition(metadata, "artifact sha256", data.fileSha256);
-    appendExbase66Definition(metadata, "SHA256SUMS", `${EXBASE66_COLIBRI_DIR}/SHA256SUMS`);
-    block.appendChild(metadata);
-
-    results.appendChild(block);
-  }
-
-  if (rendered === 0) {
+  if (!data) {
     appendExbase66UnavailableSynthesis(results);
+    return;
   }
+
+  const block = document.createElement("section");
+  block.className = "reader-exbase66-colibri";
+
+  const blockHeading = document.createElement("h5");
+  blockHeading.textContent = `Colibri synthesis — ${data.canonicalKey}`;
+  block.appendChild(blockHeading);
+
+  const summary = document.createElement("p");
+  summary.textContent = data.summary;
+  block.appendChild(summary);
+
+  if (data.reflection) {
+    const reflection = document.createElement("p");
+    reflection.textContent = data.reflection;
+    block.appendChild(reflection);
+  }
+
+  const metadata = document.createElement("dl");
+  metadata.className = "reader-exbase66-metadata";
+  appendExbase66Definition(metadata, "ai_authority", String(data.aiAuthority));
+  appendExbase66Definition(metadata, "role", data.role);
+  appendExbase66Definition(metadata, "model", data.model);
+  appendExbase66Definition(metadata, "source_matrix_sha256", data.sourceMatrixSha256);
+  appendExbase66Definition(metadata, "artifact file", `${EXBASE66_COLIBRI_DIR}/${data.file}`);
+  appendExbase66Definition(metadata, "artifact sha256", data.fileSha256);
+  appendExbase66Definition(metadata, "SHA256SUMS", `${EXBASE66_COLIBRI_DIR}/SHA256SUMS`);
+  block.appendChild(metadata);
+
+  results.appendChild(block);
 };
 
 const appendExbase66IntegrationNote = (results) => {
@@ -1672,13 +1862,70 @@ const appendExbase66IntegrationNote = (results) => {
 
   const note = document.createElement("p");
   note.textContent =
-    "This is a menus-only view: no search, no passage-ID entry, and no automatic inference. No live EXBase66 evidence endpoint is called. Verse selection is offered only where a verified governed binding exists — Psalm 23, verses 1-6 — and the verse menu stays disabled elsewhere because no verse list is exposed for those chapters.";
+    "This is a menus-only, one-verse-per-query view: no search, no passage-ID entry, and no automatic inference. No live EXBase66 evidence endpoint is called. Verse selection is offered only where a verified governed binding exists — Psalm 23, verses 1-6 — and the verse menu stays disabled elsewhere because no verse list is exposed for those chapters.";
   details.appendChild(note);
 
   results.appendChild(details);
 };
 
-const renderExbase66Evidence = () => {
+const getExbase66AccessUrl = () => {
+  const params = new URLSearchParams();
+  params.set("readerMode", "exbase66");
+  if (exbase66Edition) params.set("edition", exbase66Edition);
+  if (readerExbase66Book?.value) params.set("book", readerExbase66Book.value);
+  if (readerExbase66Chapter?.value) {
+    params.set("chapter", readerExbase66Chapter.value);
+  }
+  if (readerExbase66Verse?.value) params.set("verse", readerExbase66Verse.value);
+  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+};
+
+// Loads ONLY the selected verse's text, bound to the selected edition and verse,
+// from the governed Reader API. Returns the payload so the citation can reuse
+// the same governed citation metadata. No text, alignment, or evidence is
+// fabricated.
+const loadExbase66VerseText = async (editionID, bookCode, chapter, verse) => {
+  try {
+    const response = await fetch(
+      `${readerApiPrefix()}/reader/passage?edition=${encodeURIComponent(
+        editionID
+      )}&book=${encodeURIComponent(bookCode)}&chapter=${encodeURIComponent(
+        chapter
+      )}`
+    );
+
+    if (!response.ok) throw new Error(`Passage HTTP ${response.status}`);
+
+    const payload = await response.json();
+    const passage = payload.passage ?? payload.Passage ?? payload;
+    const verses = passage.Verses ?? passage.verses ?? [];
+    const match = verses.find(
+      (item) => String(getVerseLabel(item)) === String(verse)
+    );
+
+    return {
+      passage,
+      citation: payload.citation ?? payload.Citation ?? null,
+      text: match ? getVerseText(match).trim() : "",
+      label: match ? getVerseLabel(match) : "",
+    };
+  } catch (error) {
+    console.error("EXBase66 verse text failed:", error);
+    return { passage: null, citation: null, text: "", label: "" };
+  }
+};
+
+const appendExbase66Citation = (results, loaded, verse) => {
+  const citationText = loaded.passage
+    ? formatTurabianWebCitation(loaded.passage, loaded.citation, {
+        verseRange: String(verse),
+        accessUrl: getExbase66AccessUrl(),
+      })
+    : "";
+  appendCitationTo(results, citationText);
+};
+
+const renderExbase66Evidence = async () => {
   const results = readerExbase66Panel?.querySelector("[data-exbase66-results]");
   if (!results) return;
 
@@ -1691,11 +1938,28 @@ const renderExbase66Evidence = () => {
     return;
   }
 
+  // ONE VERSE PER QUERY: verse selection is required and there is no
+  // chapter-wide fallback path.
+  if (!verse || readerExbase66Verse?.disabled) {
+    setExbase66Message(EXBASE66_VERSE_REQUIRED);
+    return;
+  }
+
+  const editionID = exbase66Edition || exbase66EditionID;
   const bookLabel =
     readerExbase66Book?.selectedOptions?.[0]?.textContent?.trim() || bookCode;
-  const reference = `${exbase66EditionID} — ${bookLabel} ${chapter}${
-    verse ? `:${verse}` : ""
-  }`;
+  const editionLabel =
+    readerExbase66EditionSelect?.selectedOptions?.[0]?.textContent?.trim() ||
+    editionID;
+  const reference = `${editionLabel} — ${bookLabel} ${chapter}:${verse}`;
+
+  setExbase66Message("Loading the selected verse…");
+  const loaded = await loadExbase66VerseText(
+    editionID,
+    bookCode,
+    chapter,
+    verse
+  );
 
   results.replaceChildren();
 
@@ -1706,6 +1970,14 @@ const renderExbase66Evidence = () => {
   const referenceLine = document.createElement("p");
   referenceLine.textContent = `Reference: ${reference}`;
   results.appendChild(referenceLine);
+
+  const verseText = document.createElement("p");
+  verseText.className = "reader-exbase66-translation";
+  verseText.dir = "auto";
+  verseText.textContent = loaded.text
+    ? `${loaded.label || verse} ${loaded.text}`
+    : "Selected verse text is unavailable from the Reader API for this edition. No text was fabricated.";
+  results.appendChild(verseText);
 
   const isPsalm23 =
     bookCode === EXBASE66_PSALM23_BOOK_CODE &&
@@ -1722,6 +1994,10 @@ const renderExbase66Evidence = () => {
 
   appendExbase66IntegrationNote(results);
 
+  // Citation is the very last element: the BOTTOM of the results area, for
+  // exactly the one verse.
+  appendExbase66Citation(results, loaded, verse);
+
   setExbase66Message("");
 };
 
@@ -1733,7 +2009,69 @@ const clearExbase66Results = () => {
   setExbase66Message("");
 };
 
-readerExbase66Book?.addEventListener("change", async () => {
+const resetExbase66Downstream = () => {
+  clearExbase66Results();
+
+  if (readerExbase66Book) {
+    readerExbase66Book.replaceChildren(
+      makeExbase66Option("Select Bible / Edition first")
+    );
+    readerExbase66Book.disabled = true;
+  }
+
+  if (readerExbase66Chapter) {
+    readerExbase66Chapter.replaceChildren(
+      makeExbase66Option("Select book first")
+    );
+    readerExbase66Chapter.disabled = true;
+  }
+
+  resetExbase66VerseMenu(false);
+  if (readerExbase66Display) readerExbase66Display.disabled = true;
+};
+
+// Selection flow: Language → Bible/edition → Book → Chapter → Verse → Display.
+// Every menu clears stale results, including the new language/edition menus.
+const handleExbase66LanguageChange = () => {
+  exbase66Language = readerExbase66Language.value;
+  exbase66Edition = "";
+  exbase66BooksLoaded = false;
+
+  resetExbase66Downstream();
+
+  const entries = getExbase66EditionEntries(exbase66Language);
+  fillExbase66Select(
+    readerExbase66EditionSelect,
+    "Select Bible / Edition",
+    entries,
+    ""
+  );
+
+  setExbase66Message(
+    !exbase66Language
+      ? "Select a language."
+      : entries.length
+        ? "Select a Bible / edition."
+        : "No governed EXBase66 edition is available for this language yet."
+  );
+};
+
+const handleExbase66EditionChange = async () => {
+  exbase66Edition = readerExbase66EditionSelect.value;
+  exbase66BooksLoaded = false;
+
+  resetExbase66Downstream();
+
+  if (!exbase66Edition) {
+    setExbase66Message("Select a Bible / edition.");
+    return;
+  }
+
+  exbase66BooksLoaded = true;
+  await loadExbase66Books();
+};
+
+const handleExbase66BookChange = async () => {
   const bookCode = readerExbase66Book.value;
 
   clearExbase66Results();
@@ -1753,7 +2091,7 @@ readerExbase66Book?.addEventListener("change", async () => {
   try {
     const response = await fetch(
       `${readerApiPrefix()}/reader/chapters?edition=${encodeURIComponent(
-        exbase66EditionID
+        exbase66Edition || exbase66EditionID
       )}&book=${encodeURIComponent(bookCode)}`
     );
 
@@ -1780,16 +2118,16 @@ readerExbase66Book?.addEventListener("change", async () => {
       "Unable to load the EXBase66 chapter menu right now. No evidence was fabricated."
     );
   }
-});
+};
 
-readerExbase66Chapter?.addEventListener("change", () => {
+const handleExbase66ChapterChange = () => {
   const chapter = readerExbase66Chapter.value;
   const bookCode = readerExbase66Book?.value ?? "";
 
   clearExbase66Results();
 
   populateExbase66VerseMenu(bookCode, chapter);
-  if (readerExbase66Display) readerExbase66Display.disabled = !chapter;
+  if (readerExbase66Display) readerExbase66Display.disabled = true;
 
   if (!chapter) {
     setExbase66Message("Select a chapter.");
@@ -1797,22 +2135,38 @@ readerExbase66Chapter?.addEventListener("change", () => {
     bookCode === EXBASE66_PSALM23_BOOK_CODE &&
     chapter === EXBASE66_PSALM23_CHAPTER
   ) {
-    setExbase66Message(
-      "Psalm 23 verses 1-6 have a verified binding; select a verse or display the whole chapter."
-    );
+    setExbase66Message("Select a verse to display its evidence.");
   } else {
     setExbase66Message(
-      `${EXBASE66_VERSE_UNAVAILABLE}; evidence will cover the whole chapter.`
+      `${EXBASE66_VERSE_UNAVAILABLE}; no evidence can be displayed.`
     );
   }
-});
+};
 
-readerExbase66Verse?.addEventListener("change", () => {
+const handleExbase66VerseChange = () => {
   clearExbase66Results();
-});
 
+  const verse = readerExbase66Verse.value;
+  if (readerExbase66Display) readerExbase66Display.disabled = !verse;
+
+  setExbase66Message(
+    verse ? "Display evidence when ready." : EXBASE66_VERSE_REQUIRED
+  );
+};
+
+readerExbase66Language?.addEventListener("change", handleExbase66LanguageChange);
+readerExbase66EditionSelect?.addEventListener(
+  "change",
+  () => void handleExbase66EditionChange()
+);
+readerExbase66Book?.addEventListener(
+  "change",
+  () => void handleExbase66BookChange()
+);
+readerExbase66Chapter?.addEventListener("change", handleExbase66ChapterChange);
+readerExbase66Verse?.addEventListener("change", handleExbase66VerseChange);
 readerExbase66Display?.addEventListener("click", () => {
-  renderExbase66Evidence();
+  void renderExbase66Evidence();
 });
 
 const syncReaderQuery = () => {
@@ -2070,7 +2424,220 @@ readerShare?.addEventListener("click", async () => {
   }
 });
 
+/* =====================================================================
+   READER HELP (contextual)
+   The ☰ SCRIPTUREi menu offers a Help topic per reader. A topic renders its
+   description inside the Read Scripture content area and "Return to Scripture"
+   restores the prior passage, reader/view, and selections from an in-memory
+   snapshot — no fetch, AI, or enrichment call is made by opening or leaving Help.
+   ===================================================================== */
+
+const readerHelpPanel = document.querySelector("[data-reader-help-panel]");
+const readerEditionName = document.querySelector("[data-reader-edition-name]");
+const readerSiteMenuTrigger = document.querySelector("[data-reader-site-menu]");
+const readerSiteMenuPanel = document.querySelector(
+  "[data-reader-site-menu-panel]"
+);
+const readerNavigation = document.querySelector(".reader-navigation");
+const readerToolsFooter = document.querySelector(".reader-tools");
+
+const readerHelpContent = {
+  bible: {
+    title: "Bible Help",
+    paragraphs: [
+      "The Bible view is the first of four readers, chosen in the ribbon beside ☰ SCRIPTUREi: Bible, Century, Base66, and EXBase66.",
+      "Open a published edition by choosing a language, then a Bible / Translation, then a book and a chapter. Language entries show the native name followed by the English name in parentheses — for example “Deutsch (German)” — and are ordered A–Z by the English name. Only editions published to this site appear.",
+      "The reading controls below the passage adjust and share the text: A− and A+ change the on-screen font size, Print opens the browser's print dialog for the current passage, Download saves the passage as a text file, and Share uses the device share sheet (or copies the text) where the browser supports it. A control the browser cannot support stays disabled.",
+      "Below the passage the reader shows a Turabian-style citation assembled from the selected edition's own metadata and kept in that Bible's language. When the governed metadata is missing, the reader states that rather than substituting English details.",
+    ],
+  },
+  century: {
+    title: "Century Help",
+    paragraphs: [
+      "The Century view is the first reader's other view. It browses published Scripture witnesses by the edition century metadata recorded for each edition.",
+      "Choose a century, then the edition built in that century, then a book and a chapter. Selections pass through the same governed Reader path as the Bible view.",
+      "Edition century is publication metadata for that edition only. It is not the date of the Biblical events described and not the date the text was composed.",
+    ],
+  },
+  base66: {
+    title: "Base66 Help",
+    paragraphs: [
+      "Base66 is the second reader. It presents a governed reading view built only from a designated set of Base66 edition identities, so the edition shown is the one the campaign has governed rather than an arbitrary one.",
+      "Navigation mirrors the Bible view: language, Bible / Translation, book, and chapter. The passage is canonical Bible content; alongside it Base66 adds reference layers where the Reader data path provides them — a translation line, an original-language line, and lexical/Strong's values.",
+      "Where a layer is not populated for a verse, Base66 states that the layer is unavailable instead of filling it in. The Bible text is canonical content; the original-language and lexical/Strong layers are governed reference material, not a second canon.",
+    ],
+  },
+  exbase66: {
+    title: "EXBase66 Help",
+    paragraphs: [
+      "EXBase66 is the third reader. It answers a single-verse query: choose a language, then a Bible / edition, then a book, a chapter, and a verse, then press Display evidence.",
+      "Only the governed English binding eng-eng-asv (American Standard Version, 1901) has a verified EXBase66 verse binding today; no other language does. The right-side panel holds the query menus, the core and external layer lists, and the diagnostics block.",
+      "Each layer is labelled with its evidence tier and source. The tiers keep different things apart: configured-only, populated, populated and validated, populated external evidence, validated gaps, and NO_EVIDENCE. A disabled layer menu means that layer is not available for display for the current query.",
+      "Colibri synthesis is configuration only here: config records role SYNTHESIS_ONLY and authority false, and this repository never starts the Colibri server and the site makes no live Colibri calls. Existing synthesis artifacts are not ingested by the site. Missing evidence, candidate records, validation state, and AI synthesis are distinct states, and AI synthesis creates no Biblical or canonical authority.",
+    ],
+  },
+};
+
+let readerHelpSnapshot = null;
+
+const buildReaderHelpTopic = (topic) => {
+  const content = readerHelpContent[topic];
+  if (!content || !readerHelpPanel) return null;
+
+  readerHelpPanel.replaceChildren();
+
+  const heading = document.createElement("h3");
+  heading.textContent = content.title;
+  readerHelpPanel.appendChild(heading);
+
+  for (const text of content.paragraphs) {
+    const paragraph = document.createElement("p");
+    paragraph.textContent = text;
+    readerHelpPanel.appendChild(paragraph);
+  }
+
+  const returnButton = document.createElement("button");
+  returnButton.type = "button";
+  returnButton.className = "reader-help-return";
+  returnButton.dataset.readerHelpReturn = "";
+  returnButton.textContent = "Return to Scripture";
+  readerHelpPanel.appendChild(returnButton);
+
+  return returnButton;
+};
+
+const captureReaderHelpSnapshot = () => ({
+  mode: readerMode?.value ?? "reader",
+  activeMode: readerMode?.dataset.activeMode ?? "reader",
+  returnMode: readerMode?.dataset.returnMode ?? null,
+  language: readerLanguage?.value ?? "",
+  edition: readerEdition?.value ?? "",
+  book: readerBook?.value ?? "",
+  chapter: readerChapter?.value ?? "",
+  message: readerMessage?.textContent ?? "",
+  editionName: readerEditionName?.textContent ?? "",
+  passageHTML: readerPassage?.innerHTML ?? "",
+  passageDir: readerPassage?.dir ?? "",
+  base66Hidden: readerBase66Panel?.hidden ?? true,
+  exbase66Hidden: readerExbase66Panel?.hidden ?? true,
+  navigationHidden: readerNavigation?.hidden ?? false,
+  toolsHidden: readerToolsFooter?.hidden ?? false,
+  toolsEnabled: readerPrint ? !readerPrint.disabled : false,
+  fontScale: readerFontScale,
+  currentPassage,
+  currentCitation,
+});
+
+const showReaderHelp = (topic) => {
+  const returnButton = buildReaderHelpTopic(topic);
+  if (!returnButton) return;
+
+  if (!readerHelpSnapshot) readerHelpSnapshot = captureReaderHelpSnapshot();
+
+  readerHelpPanel.hidden = false;
+  if (readerEditionName) readerEditionName.hidden = true;
+  if (readerMessage) readerMessage.hidden = true;
+  if (readerPassage) readerPassage.hidden = true;
+  if (readerBase66Panel) readerBase66Panel.hidden = true;
+  if (readerExbase66Panel) readerExbase66Panel.hidden = true;
+  if (readerNavigation) readerNavigation.hidden = true;
+  if (readerToolsFooter) readerToolsFooter.hidden = true;
+
+  returnButton.focus();
+};
+
+const returnToScripture = () => {
+  const snapshot = readerHelpSnapshot;
+  readerHelpSnapshot = null;
+
+  if (readerHelpPanel) readerHelpPanel.hidden = true;
+  if (!snapshot) return;
+
+  if (readerEditionName) {
+    readerEditionName.hidden = false;
+    readerEditionName.textContent = snapshot.editionName;
+  }
+  if (readerMessage) {
+    readerMessage.hidden = false;
+    readerMessage.textContent = snapshot.message;
+  }
+  if (readerPassage) {
+    readerPassage.hidden = false;
+    readerPassage.dir = snapshot.passageDir;
+    readerPassage.innerHTML = snapshot.passageHTML;
+  }
+  if (readerBase66Panel) readerBase66Panel.hidden = snapshot.base66Hidden;
+  if (readerExbase66Panel) readerExbase66Panel.hidden = snapshot.exbase66Hidden;
+  if (readerNavigation) readerNavigation.hidden = snapshot.navigationHidden;
+  if (readerToolsFooter) readerToolsFooter.hidden = snapshot.toolsHidden;
+
+  if (readerMode) {
+    readerMode.value = snapshot.mode;
+    readerMode.dataset.activeMode = snapshot.activeMode;
+    if (snapshot.returnMode) readerMode.dataset.returnMode = snapshot.returnMode;
+  }
+  if (readerLanguage) readerLanguage.value = snapshot.language;
+  if (readerEdition) readerEdition.value = snapshot.edition;
+  if (readerBook) readerBook.value = snapshot.book;
+  if (readerChapter) readerChapter.value = snapshot.chapter;
+
+  readerFontScale = snapshot.fontScale;
+  applyReaderFontScale();
+  currentPassage = snapshot.currentPassage;
+  currentCitation = snapshot.currentCitation;
+
+  setReaderToolsEnabled(snapshot.toolsEnabled);
+  syncReaderSwitcherUI(snapshot.mode);
+  setPrimaryReaderLabel(snapshot.mode === "century" ? "Century" : "Language");
+
+  readerSiteMenuTrigger?.focus();
+};
+
+const setReaderSiteMenuOpen = (open) => {
+  if (!readerSiteMenuPanel || !readerSiteMenuTrigger) return;
+  readerSiteMenuPanel.hidden = !open;
+  readerSiteMenuTrigger.setAttribute("aria-expanded", String(open));
+};
+
+if (readerSiteMenuTrigger && readerSiteMenuPanel) {
+  readerSiteMenuTrigger.addEventListener("click", () => {
+    const willOpen = readerSiteMenuPanel.hidden;
+    setReaderSiteMenuOpen(willOpen);
+    if (willOpen) {
+      readerSiteMenuPanel.querySelector("[data-reader-help]")?.focus();
+    }
+  });
+
+  readerSiteMenuPanel.addEventListener("click", (event) => {
+    const item = event.target.closest("[data-reader-help]");
+    if (!item) return;
+    setReaderSiteMenuOpen(false);
+    showReaderHelp(item.dataset.readerHelp);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !readerSiteMenuPanel.hidden) {
+      setReaderSiteMenuOpen(false);
+      readerSiteMenuTrigger.focus();
+    }
+  });
+}
+
+readerHelpPanel?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-reader-help-return]")) returnToScripture();
+});
+
 if (readerLanguage && readerEdition && readerBook && readerChapter) {
+  readerSwitcherButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.readerSelect;
+      // "bible" is the first reader's standard view; "century" is the first
+      // reader's century view that used to live in the separate Bible/Century
+      // row and still runs the same governed code path.
+      requestReaderMode(key === "bible" ? "reader" : key);
+    });
+  });
+
   readerMode?.addEventListener("change", async () => {
     const nextMode = readerMode.value;
     const activeMode = readerMode.dataset.activeMode ?? "reader";
@@ -2091,6 +2658,7 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
       if (readerBase66Panel) readerBase66Panel.hidden = nextMode !== "base66";
       if (readerExbase66Panel) readerExbase66Panel.hidden = true;
       setReaderModeMessage(readerModeDescriptions[nextMode]);
+      syncReaderSwitcherUI(nextMode);
       setPrimaryReaderLabel(nextMode === "century" ? "Century" : "Language");
       syncReaderQuery();
       return;
@@ -2144,6 +2712,9 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
   readerMode.dataset.activeMode = readerMode.value ?? "reader";
 
   setReaderModeState(readerMode?.value ?? "reader");
+  setPrimaryReaderLabel(
+    readerMode?.value === "century" ? "Century" : "Language"
+  );
 
   readerLanguage.addEventListener("change", () => {
     clearPassage();
@@ -2583,3 +3154,40 @@ const renderScriptureiGlance = () => {
 };
 
 renderScriptureiGlance();
+
+/* SCRIPTUREi READER MODE REFRESH R1
+   Close visible Help before the existing ribbon mode handler runs.
+   No document reload; preserve existing Reader navigation.
+*/
+document.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element)) return;
+
+  const ribbon = document.querySelector(".reader-ribbon-switcher");
+  if (!ribbon) return;
+
+  const control = event.target.closest("button, a, [role='tab']");
+  if (!control || !ribbon.contains(control)) return;
+
+  const mode = (control.textContent || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!["Bible", "Century", "Base66", "EXBase66"].includes(mode)) {
+    return;
+  }
+
+  const returnButton = Array.from(
+    document.querySelectorAll("button")
+  ).find((button) =>
+    button.textContent.trim() === "Return to Scripture" &&
+    button.getClientRects().length > 0
+  );
+
+  if (returnButton) {
+    returnButton.click();
+  }
+
+  // The existing ribbon handler continues processing this selection.
+}, true);
+
+/* END SCRIPTUREi READER MODE REFRESH R1 */
