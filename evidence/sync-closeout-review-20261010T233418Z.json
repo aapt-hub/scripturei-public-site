@@ -1,0 +1,17 @@
+{
+  "schema": "scripturei-sync-closeout-review/v1",
+  "runId": "20261010T233418Z",
+  "siteBranch": "dev/gloocode-exbase66-site-ui-20261006",
+  "siteCommit": "6d0d5fc7c0a4f5ce9bfc02e2bf29506fb1a88f6c",
+  "windowsGitHubSync": "PASS",
+  "roePowerShellReuseSync": "PASS",
+  "strategiHandoff": "PASS",
+  "eventiPacketSha256": "1ca35bb52648deb450b4c1885adf2663bdc6fe5bbd49e88096f7c3ce050d3858",
+  "eventiState": "PENDING_INGESTION",
+  "readerRoeIngestion": "NOT_VERIFIED",
+  "readerProduction": "OWNER_REPORTED_ACCEPTED",
+  "gitCommitPerformed": false,
+  "eventiLedgerMutation": false,
+  "publicationPerformed": false,
+  "disposition": "HOLD_EVENTI_INTAKE_AND_READER_ROE_UNVERIFIED"
+}
