@@ -2512,6 +2512,7 @@ const readerSiteMenuPanel = document.querySelector(
 );
 const readerNavigation = document.querySelector(".reader-navigation");
 const readerToolsFooter = document.querySelector(".reader-tools");
+const readerModeStatus = document.querySelector(".reader-mode-status");
 
 const readerHelpContent = {
   bible: {
@@ -2591,10 +2592,14 @@ const captureReaderHelpSnapshot = () => ({
   editionName: readerEditionName?.textContent ?? "",
   passageHTML: readerPassage?.innerHTML ?? "",
   passageDir: readerPassage?.dir ?? "",
+  verseLabelHidden: readerVerse?.closest("label")?.hidden ?? true,
+  verseDisabled: readerVerse?.disabled ?? true,
+  modeMessage: readerModeMessage?.textContent ?? "",
   base66Hidden: readerBase66Panel?.hidden ?? true,
   exbase66Hidden: readerExbase66Panel?.hidden ?? true,
   navigationHidden: readerNavigation?.hidden ?? false,
   toolsHidden: readerToolsFooter?.hidden ?? false,
+  modeStatusHidden: readerModeStatus?.hidden ?? false,
   toolsEnabled: readerPrint ? !readerPrint.disabled : false,
   fontScale: readerFontScale,
   currentPassage,
@@ -2615,15 +2620,20 @@ const showReaderHelp = (topic) => {
   if (readerExbase66Panel) readerExbase66Panel.hidden = true;
   if (readerNavigation) readerNavigation.hidden = true;
   if (readerToolsFooter) readerToolsFooter.hidden = true;
+  if (readerModeStatus) readerModeStatus.hidden = true;
+  const helpVerseLabel = readerVerse?.closest("label");
+  if (helpVerseLabel) helpVerseLabel.hidden = true;
 
   returnButton.focus();
 };
 
-const returnToScripture = () => {
+const returnToScripture = ({ focusTrigger = true } = {}) => {
   const snapshot = readerHelpSnapshot;
   readerHelpSnapshot = null;
 
   if (readerHelpPanel) readerHelpPanel.hidden = true;
+  if (readerSiteMenuPanel) readerSiteMenuPanel.hidden = true;
+  readerSiteMenuTrigger?.setAttribute("aria-expanded", "false");
   if (!snapshot) return;
 
   if (readerEditionName) {
@@ -2643,6 +2653,7 @@ const returnToScripture = () => {
   if (readerExbase66Panel) readerExbase66Panel.hidden = snapshot.exbase66Hidden;
   if (readerNavigation) readerNavigation.hidden = snapshot.navigationHidden;
   if (readerToolsFooter) readerToolsFooter.hidden = snapshot.toolsHidden;
+  if (readerModeStatus) readerModeStatus.hidden = snapshot.modeStatusHidden;
 
   if (readerMode) {
     readerMode.value = snapshot.mode;
@@ -2653,9 +2664,13 @@ const returnToScripture = () => {
   if (readerEdition) readerEdition.value = snapshot.edition;
   if (readerBook) readerBook.value = snapshot.book;
   if (readerChapter) readerChapter.value = snapshot.chapter;
+  const verseLabel = readerVerse?.closest("label");
+  if (verseLabel) verseLabel.hidden = snapshot.verseLabelHidden;
+  if (readerVerse) readerVerse.disabled = snapshot.verseDisabled;
   if (readerVerse && [...readerVerse.options].some(o => o.value === snapshot.verse)) {
     readerVerse.value = snapshot.verse;
   }
+  if (readerModeMessage) readerModeMessage.textContent = snapshot.modeMessage;
 
   readerFontScale = snapshot.fontScale;
   applyReaderFontScale();
@@ -2665,8 +2680,9 @@ const returnToScripture = () => {
   setReaderToolsEnabled(snapshot.toolsEnabled);
   syncReaderSwitcherUI(snapshot.mode);
   setPrimaryReaderLabel(snapshot.mode === "century" ? "Century" : "Language");
+  syncReaderQuery();
 
-  readerSiteMenuTrigger?.focus();
+  if (focusTrigger) readerSiteMenuTrigger?.focus();
 };
 
 const setReaderSiteMenuOpen = (open) => {
@@ -2677,11 +2693,33 @@ const setReaderSiteMenuOpen = (open) => {
 
 if (readerSiteMenuTrigger && readerSiteMenuPanel) {
   readerSiteMenuTrigger.addEventListener("click", () => {
-    const willOpen = readerSiteMenuPanel.hidden;
-    setReaderSiteMenuOpen(willOpen);
-    if (willOpen) {
-      readerSiteMenuPanel.querySelector("[data-reader-help]")?.focus();
+    setReaderSiteMenuOpen(false);
+
+    readerHelpSnapshot = null;
+    if (readerHelpPanel) {
+      readerHelpPanel.hidden = true;
+      readerHelpPanel.replaceChildren();
     }
+
+    if (readerMode) {
+      readerMode.value = "reader";
+      readerMode.dataset.activeMode = "reader";
+      delete readerMode.dataset.returnMode;
+    }
+
+    setReaderModeState("reader");
+    restoreReaderSelectionState();
+
+    if (readerNavigation) readerNavigation.hidden = false;
+    if (readerModeStatus) readerModeStatus.hidden = false;
+    if (readerEditionName) readerEditionName.hidden = false;
+    if (readerMessage) readerMessage.hidden = false;
+    if (readerPassage) readerPassage.hidden = false;
+    if (readerToolsFooter) readerToolsFooter.hidden = false;
+
+    syncReaderQuery();
+    setReaderSiteMenuOpen(true);
+    readerSiteMenuPanel.querySelector("[data-reader-help]")?.focus();
   });
 
   readerSiteMenuPanel.addEventListener("click", (event) => {
@@ -3237,36 +3275,22 @@ const renderScriptureiGlance = () => {
 
 renderScriptureiGlance();
 
-/* SCRIPTUREi READER MODE REFRESH R1
-   Close visible Help before the existing ribbon mode handler runs.
-   No document reload; preserve existing Reader navigation.
-*/
+/* SCRIPTUREi READER MODE REFRESH R1 (view-switch correction)
+   Close visible Help before the existing ribbon mode handler runs, so the
+   snapshotted language, edition, book, chapter, verse, passage, citation,
+   and URL state is restored with no reload and no focus steal from the
+   ribbon control the reader clicked. */
 document.addEventListener("click", (event) => {
   if (!(event.target instanceof Element)) return;
 
   const ribbon = document.querySelector(".reader-ribbon-switcher");
   if (!ribbon) return;
 
-  const control = event.target.closest("button, a, [role='tab']");
+  const control = event.target.closest("[data-reader-select]");
   if (!control || !ribbon.contains(control)) return;
 
-  const mode = (control.textContent || "")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (!["Bible", "Century", "Base66", "EXBase66"].includes(mode)) {
-    return;
-  }
-
-  const returnButton = Array.from(
-    document.querySelectorAll("button")
-  ).find((button) =>
-    button.textContent.trim() === "Return to Scripture" &&
-    button.getClientRects().length > 0
-  );
-
-  if (returnButton) {
-    returnButton.click();
+  if (readerHelpPanel && !readerHelpPanel.hidden) {
+    returnToScripture({ focusTrigger: false });
   }
 
   // The existing ribbon handler continues processing this selection.

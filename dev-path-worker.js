@@ -18,12 +18,12 @@ export default {
       );
     }
 
-    if (url.pathname === "/dev/") {
-      return env.ASSETS.fetch(request);
-    }
-
-    if (url.pathname.startsWith("/dev/")) {
-      return env.ASSETS.fetch(request);
+    if (url.pathname === "/dev/" ||
+        url.pathname.startsWith("/dev/")) {
+      url.pathname = url.pathname.slice(4) || "/";
+      return env.ASSETS.fetch(
+        new Request(url.toString(), request)
+      );
     }
 
     return siteWorker.fetch(request, env, ctx);
