@@ -1,0 +1,8 @@
+e5c6a679e7ecf1adbe0e4f8f4c01c514ba98304b83c8d58af8c19aadfd0b482d  ./dev-asset-identities.txt
+200307ecb4d6adf5ec907a3c8a31285f2ee3d2687f9eecb3cb5710cc2292004d  ./development-worker.txt
+750e459bf2d639649bb562382c44507cf2178e0350ab484d2741362e7ead3f45  ./git-release-identities.txt
+d00c5f99e81ea4818dcc71a3a0b1f336cca8f5f74dd81e8833f01e5d88e3cf5d  ./git-remotes.txt
+91b5490377cfbe620716e219652de81797014dd8fee85de782526ab06bdba311  ./git-status.txt
+89d982a92a3aa41840dc74d55ab23b39a91c6da7e7f5b80f48fb20f9eaae647d  ./http-status.txt
+5d27e294810e36e11e8b8d57d362c4f5968a2ef460279e2c5f30b0fbe8422163  ./local-head.txt
+bb4e382e9739881fea7e10c4725bcd2e81f761c62e8c65ab93282d2e83eb6ab5  ./production-worker.txt

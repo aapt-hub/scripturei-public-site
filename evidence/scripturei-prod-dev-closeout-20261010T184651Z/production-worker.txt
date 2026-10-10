@@ -1,0 +1,92 @@
+
+ ⛅️ wrangler 4.148.0
+────────────────────
+Created:     2026-10-01T19:47:08.954Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) c59ce34f-aa3c-4caa-8035-8598ae650cb2
+                 Created:  2026-10-01T19:47:08.392Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-01T20:02:20.850Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 091b7149-1e3f-42a1-a243-9119a6298aa4
+                 Created:  2026-10-01T20:02:19.183Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-01T22:30:22.541Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) cbcf1aab-0105-42a7-854d-b9d28df8fe1e
+                 Created:  2026-10-01T22:30:22.026Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-01T23:01:52.515Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) faef055d-09ea-4e36-a016-fb739855c734
+                 Created:  2026-10-01T23:01:52.024Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-03T11:13:01.468Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) d4c57f69-4593-4bfa-9667-dce573640c13
+                 Created:  2026-10-03T11:13:00.987Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-03T11:18:18.345Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 351972e6-7c25-4416-9a99-1672a6ed3ea8
+                 Created:  2026-10-03T11:18:17.827Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-03T11:51:58.313Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 4d7c82de-0010-482d-ac6c-6923c35511f1
+                 Created:  2026-10-03T11:51:57.993Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-08T14:02:50.346Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 82ef2ea2-0558-462a-b389-f58f3263eb3f
+                 Created:  2026-10-08T14:02:49.757Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-09T22:39:32.293Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) c0f61c0f-6041-4e50-911c-efb35f1753d4
+                 Created:  2026-10-09T22:39:31.822Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-09T22:40:14.070Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) d47078c3-e0c0-4808-ba00-5131f8ee113d
+                 Created:  2026-10-09T22:40:12.850Z
+                     Tag:  -
+                 Message:  -

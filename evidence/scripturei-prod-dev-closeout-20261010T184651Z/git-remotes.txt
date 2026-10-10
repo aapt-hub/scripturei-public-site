@@ -1,0 +1,2 @@
+origin	https://github.com/aapt-hub/scripturei-public-site.git (fetch)
+origin	https://github.com/aapt-hub/scripturei-public-site.git (push)

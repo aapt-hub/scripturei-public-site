@@ -1,0 +1,47 @@
+
+ ⛅️ wrangler 4.148.0 (update available 4.149.0)
+───────────────────────────────────────────────
+Created:     2026-10-09T21:53:04.785Z
+Author:      apauneto@gmail.com
+Source:      Upload
+Message:     Automatic deployment on upload.
+Version(s):  (100%) 74ce0126-437b-47ac-aa59-a52f25ae6cd2
+                 Created:  2026-10-09T21:53:04.785Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-09T22:08:56.716Z
+Author:      apauneto@gmail.com
+Source:      Secret Change
+Message:     -
+Version(s):  (100%) b38d4b86-afff-4d22-95e8-66efa8337cc9
+                 Created:  2026-10-09T22:08:56.716Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-09T22:44:17.787Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) 74bff1fa-8130-45ac-9c81-b87805a4fb22
+                 Created:  2026-10-09T22:44:17.364Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-09T22:45:41.128Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     Development path validation failed
+Version(s):  (100%) b38d4b86-afff-4d22-95e8-66efa8337cc9
+                 Created:  2026-10-09T22:08:56.716Z
+                     Tag:  -
+                 Message:  -
+
+Created:     2026-10-10T17:48:15.983Z
+Author:      apauneto@gmail.com
+Source:      Unknown (deployment)
+Message:     -
+Version(s):  (100%) fc0c9fcf-1c59-480c-893e-c96087269f5e
+                 Created:  2026-10-10T17:48:15.475Z
+                     Tag:  -
+                 Message:  -

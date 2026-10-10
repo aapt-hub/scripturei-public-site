@@ -1,0 +1,16 @@
+?? .wrangler/
+?? SCRIPTUREi-R5-validation-evidence.txt
+?? SCRIPTUREi-public-site-local-review-R4.html
+?? SCRIPTUREi-public-site-local-review-R5.html
+?? backups/
+?? evidence/index-html-pre-exbase66-menu-poc-20261008T004229Z.html
+?? evidence/index-html-pre-exbase66-menu-poc-r2-20261008T005647Z.html
+?? evidence/index-html-pre-exbase66-verse-evidence-r1-20261008T022806Z.html
+?? evidence/reader-core-css-pre-exbase66-menu-poc-20261008T004229Z.css
+?? evidence/reader-core-css-pre-exbase66-menu-poc-r2-20261008T005647Z.css
+?? evidence/reader-core-css-pre-exbase66-verse-evidence-r1-20261008T022806Z.css
+?? evidence/scripturei-prod-dev-closeout-20261010T184651Z/
+?? evidence/scripturei-reader-ribbon-20261009T165645Z/
+?? evidence/site-js-pre-exbase66-menu-poc-20261008T004229Z.js
+?? evidence/site-js-pre-exbase66-menu-poc-r2-20261008T005647Z.js
+?? evidence/site-js-pre-exbase66-verse-evidence-r1-20261008T022806Z.js
