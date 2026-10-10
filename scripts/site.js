@@ -72,6 +72,11 @@ const setReaderModeState = (mode) => {
 
   const readerAvailable =
     mode === "reader" || mode === "base66" || mode === "century";
+  if (readerVerse) {
+    const supported = mode === "reader" || mode === "base66";
+    readerVerse.closest("label").hidden = !supported;
+    readerVerse.disabled = !supported || !currentPassage;
+  }
 
   for (const control of [
     readerLanguage,
@@ -96,6 +101,7 @@ const readerLanguage = document.querySelector("#reader-language");
 const readerEdition = document.querySelector("#reader-edition");
 const readerBook = document.querySelector("#reader-book");
 const readerChapter = document.querySelector("#reader-chapter");
+const readerVerse = document.querySelector("#reader-verse");
 const readerBase66Panel = document.querySelector("[data-reader-base66-panel]");
 const readerExbase66Book = document.querySelector("[data-exbase66-book]");
 const readerExbase66Chapter = document.querySelector("[data-exbase66-chapter]");
@@ -516,6 +522,7 @@ const setReaderToolsEnabled = (enabled) => {
 const clearPassage = () => {
   currentPassage = null;
   currentCitation = null;
+  resetVerseSelection();
   setReaderToolsEnabled(false);
   if (readerPassage) readerPassage.replaceChildren();
 };
@@ -713,8 +720,10 @@ const passageAsText = () => {
 
   const book = currentPassage.BookCode ?? currentPassage.bookCode ?? "";
   const chapter = currentPassage.Chapter ?? currentPassage.chapter ?? "";
-  const heading = `${book} ${chapter}`;
-  const verses = (currentPassage.Verses ?? currentPassage.verses ?? [])
+  const selected = ["reader", "base66"].includes(readerMode?.value)
+    ? readerVerse?.value ?? "" : "";
+  const heading = `${book} ${chapter}${selected ? ":" + selected : ""}`;
+  const verses = getScopedVerses()
     .map((verse) => `${getVerseLabel(verse)} ${getVerseText(verse)}`)
     .join("\n");
 
@@ -948,6 +957,49 @@ const loadChapters = async (editionID, bookCode) => {
   setReaderMessage("Select a chapter.");
 };
 
+/* SCRIPTUREI_DEV_VERSE_SELECTION_R1 */
+const getScopedVerses = () => {
+  const items = currentPassage?.Verses ?? currentPassage?.verses ?? [];
+  const selected = ["reader", "base66"].includes(readerMode?.value)
+    ? readerVerse?.value ?? "" : "";
+  return Array.isArray(items) ? items.filter(v =>
+    !selected || String(getVerseLabel(v)) === selected) : [];
+};
+const refreshVerseSelection = (selected = "") => {
+  if (!readerVerse || !currentPassage) return;
+  if (!["reader", "base66"].includes(readerMode?.value)) return;
+  const valid = Array.from(readerVerse.options).some(o => o.value === String(selected));
+  readerVerse.value = valid ? String(selected) : "";
+  const entries = currentPassage.Verses ?? currentPassage.verses ?? [];
+  readerPassage.querySelectorAll(".reader-verses > .reader-base66-verse")
+    .forEach((block, i) => {
+      const hidden = !!readerVerse.value &&
+        String(getVerseLabel(entries[i])) !== readerVerse.value;
+      block.hidden = hidden;
+      block.style.display = hidden ? "none" : "";
+    });
+  const book = currentPassage.BookCode ?? currentPassage.bookCode ?? "";
+  const chapter = currentPassage.Chapter ?? currentPassage.chapter ?? "";
+  const reference = `${book} ${chapter}${readerVerse.value ? ":" + readerVerse.value : ""}`;
+  const heading = readerPassage.querySelector("h4");
+  if (heading) heading.textContent = reference;
+  let scope = readerPassage.querySelector("[data-reader-verse-scope]");
+  if (!scope) {
+    scope = document.createElement("p");
+    scope.dataset.readerVerseScope = "";
+    const citation = readerPassage.querySelector(".reader-citation");
+    if (citation) citation.before(scope);
+    else readerPassage.appendChild(scope);
+  }
+  scope.hidden = !readerVerse.value;
+  scope.textContent = readerVerse.value ? `Selected verse: ${reference}` : "";
+};
+const resetVerseSelection = () => {
+  if (!readerVerse) return;
+  readerVerse.replaceChildren(new Option("All verses", ""));
+  readerVerse.disabled = true;
+};
+
 const loadPassage = async (editionID, bookCode, chapter) => {
   clearPassage();
 
@@ -1045,10 +1097,25 @@ const loadPassage = async (editionID, bookCode, chapter) => {
 
   readerPassage.appendChild(verses);
 
+  if (readerVerse) {
+    resetVerseSelection();
+    const labels = new Set();
+    if (Array.isArray(versesPayload)) for (const entry of versesPayload) {
+      const label = String(getVerseLabel(entry));
+      if (!label || labels.has(label)) continue;
+      labels.add(label);
+      readerVerse.add(new Option(label, label));
+    }
+    const supported = ["reader", "base66"].includes(readerMode?.value);
+    readerVerse.closest("label").hidden = !supported;
+    readerVerse.disabled = !supported || labels.size === 0;
+  }
+
   // Citation always renders at the BOTTOM of the reading area. When governed
   // metadata is missing an explicit statement is shown rather than English
   // substitution or silence.
   appendCitationTo(readerPassage, formatTurabianWebCitation());
+  refreshVerseSelection("");
 
   readerPassage.dir =
     editionID === "hebwlc-ebible" ? "rtl" : "ltr";
@@ -2178,6 +2245,8 @@ const syncReaderQuery = () => {
     edition: readerEdition?.value,
     book: readerBook?.value,
     chapter: readerChapter?.value,
+    verse: ["reader", "base66"].includes(readerMode?.value) ?
+      readerVerse?.value : "",
   };
   for (const [key, value] of Object.entries(values)) {
     if (value) params.set(key, value);
@@ -2355,6 +2424,7 @@ const restoreReaderQueryState = async (
             requestedBook,
             requestedChapter
           );
+          refreshVerseSelection(query.get("verse") ?? "");
         }
       }
     }
@@ -2389,7 +2459,8 @@ readerDownload?.addEventListener("click", () => {
 
   link.href = url;
   link.download =
-    `${currentPassage.EditionID}-${currentPassage.BookCode}-${currentPassage.Chapter}.txt`;
+    `${currentPassage.EditionID}-${currentPassage.BookCode}-${currentPassage.Chapter}` +
+    (readerVerse?.value ? `-v${readerVerse.value}` : "") + ".txt";
 
   document.body.appendChild(link);
   link.click();
@@ -2401,7 +2472,8 @@ readerShare?.addEventListener("click", async () => {
   if (!currentPassage) return;
 
   const text = passageAsText();
-  const title = `${currentPassage.BookCode} ${currentPassage.Chapter}`;
+  const title = `${currentPassage.BookCode} ${currentPassage.Chapter}` +
+    (readerVerse?.value ? `:${readerVerse.value}` : "");
 
   try {
     if (navigator.share) {
@@ -2514,6 +2586,7 @@ const captureReaderHelpSnapshot = () => ({
   edition: readerEdition?.value ?? "",
   book: readerBook?.value ?? "",
   chapter: readerChapter?.value ?? "",
+  verse: readerVerse?.value ?? "",
   message: readerMessage?.textContent ?? "",
   editionName: readerEditionName?.textContent ?? "",
   passageHTML: readerPassage?.innerHTML ?? "",
@@ -2580,6 +2653,9 @@ const returnToScripture = () => {
   if (readerEdition) readerEdition.value = snapshot.edition;
   if (readerBook) readerBook.value = snapshot.book;
   if (readerChapter) readerChapter.value = snapshot.chapter;
+  if (readerVerse && [...readerVerse.options].some(o => o.value === snapshot.verse)) {
+    readerVerse.value = snapshot.verse;
+  }
 
   readerFontScale = snapshot.fontScale;
   applyReaderFontScale();
@@ -2677,6 +2753,7 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
           edition: readerEdition.value,
           book: readerBook.value,
           chapter: readerChapter.value,
+          verse: readerVerse?.value ?? "",
         }
       : null;
 
@@ -2774,6 +2851,11 @@ if (readerLanguage && readerEdition && readerBook && readerChapter) {
       setReaderMessage("Unable to load chapters.");
       console.error(error);
     }
+    syncReaderQuery();
+  });
+
+  readerVerse?.addEventListener("change", () => {
+    refreshVerseSelection(readerVerse.value);
     syncReaderQuery();
   });
 
