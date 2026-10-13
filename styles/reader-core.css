@@ -1747,3 +1747,20 @@ body.scripturei-gdisciple-family-r2
 }
 
 /* END SCRIPTUREi CONTRAST FIX R1 */
+
+/* SCRIPTUREi READER VIEW-SWITCH FIX R1
+   The Help view toggles the `hidden` attribute on reader navigation, tools,
+   message, passage, and edition-name elements, but layout rules elsewhere set
+   grid/flex display on those selectors. `[hidden]` must always win so the
+   reading chrome is fully removed while Help is open. */
+.reader-navigation[hidden],
+.reader-tools[hidden],
+.reader-message[hidden],
+.reader-mode-message[hidden],
+.reader-passage[hidden],
+.reader-mode-status[hidden],
+[data-reader-verse-label][hidden],
+[data-reader-edition-name][hidden] {
+  display: none !important;
+}
+/* END SCRIPTUREi READER VIEW-SWITCH FIX R1 */
